@@ -1,0 +1,33 @@
+# Node modules - this pattern will catch all node_modules directories anywhere in the repo
+**/node_modules/
+
+# Environment variables - pattern for all .env files anywhere in the repo
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
+
+# Build directories
+**/dist/
+**/build/
+
+# Editor files
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Logs
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# pnpm specific
+**/.pnpm-store/
+
+packages/backend/src/generated

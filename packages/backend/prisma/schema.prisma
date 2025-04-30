@@ -1,0 +1,114 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "commonjs"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SystemConfig {
+  id           String    @id @default(cuid())
+  key          String    @unique
+  value        String
+  description  String?
+  lastUpdated  DateTime  @default(now()) @updatedAt @map("last_updated")
+  updatedBy    String?   @map("updated_by")
+  
+  @@map("system_configs")
+}
+
+model Account {
+  id                String    @id @default(cuid())
+  userId            String    @map("user_id")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String    // "google", "linkedin", etc.
+  providerAccountId String    @map("provider_account_id") // Provider's unique identifier
+  refreshToken      String?   @db.Text @map("refresh_token")
+  accessToken       String?   @db.Text @map("access_token")
+  expiresAt         DateTime? @map("expires_at")
+  tokenType         String?   @map("token_type")
+  scope             String?
+  idToken           String?   @db.Text @map("id_token")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique // JWT signature or session identifier
+  isValid      Boolean  @default(true) @map("is_valid")
+  expiresAt    DateTime @map("expires_at")
+  lastActiveAt DateTime @default(now()) @map("last_active_at")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("sessions")
+}
+
+model Device {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId     String   @map("device_id")
+  name         String?
+  platform     String
+  lastUsedAt   DateTime @default(now()) @map("last_used_at")
+  isTrusted    Boolean  @default(false) @map("is_trusted")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, deviceId])
+  @@map("devices")
+}
+
+model AuthActivity {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event       String   // login, logout, token_refresh, etc.
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  deviceId    String?  @map("device_id")
+  sessionId   String?  @map("session_id")
+  successful  Boolean  @default(true)
+  details     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@map("auth_activities")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String?   
+  companyName     String?   @map("company_name")
+  companyLogo     String?   @map("company_logo") // URL to stored logo
+  phone           String?   
+  address         String?   
+  website         String?   
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt      @map("updated_at")
+  role            UserRole  @default(USER) @map("user_role")
+  accounts        Account[]
+  sessions        Session[]
+  devices         Device[]
+  authActivities  AuthActivity[]
+
+  @@map("users")
+}

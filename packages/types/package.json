@@ -1,0 +1,6 @@
+{
+  "name": "@scaffold/types",
+  "types": "src/index.d.ts",
+  "main": "src/index.ts",
+  "module": "src/index.ts"
+}

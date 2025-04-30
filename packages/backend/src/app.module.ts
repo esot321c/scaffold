@@ -1,0 +1,41 @@
+import {
+  Module,
+  NestModule,
+  MiddlewareConsumer,
+  RequestMethod,
+} from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { AppConfigModule } from './config/config.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { RedisModule } from './redis/redis.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersController } from './users/users.controller';
+import { UsersModule } from './users/users.module';
+import { CsrfMiddleware } from './auth/middleware/csrf.middleware';
+import { AdminModule } from './admin/admin.module';
+
+@Module({
+  imports: [
+    AppConfigModule,
+    PrismaModule,
+    RedisModule,
+    AuthModule,
+    UsersModule,
+    AdminModule,
+  ],
+  controllers: [AppController, UsersController],
+  providers: [AppService],
+})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(CsrfMiddleware)
+      .exclude(
+        { path: 'auth/google', method: RequestMethod.GET },
+        { path: 'auth/google/callback', method: RequestMethod.GET },
+        { path: 'auth/token', method: RequestMethod.POST }, // Mobile token endpoint, currently unused
+      )
+      .forRoutes('*');
+  }
+}
