@@ -78,10 +78,6 @@ The application will be available at:
 - Backend API: http://localhost:3001
 - API Documentation: http://localhost:3001/api
 
-## Documentation
-
-Comprehensive documentation coming soon.
-
 ## License
 
 MIT License
@@ -147,6 +143,15 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [ ] Add advanced CSP headers
 - [ ] Complete security audit
 - [ ] Enable database query optimization
+
+#### Device Management
+
+- [ ] Complete device management UI for user profiles
+- [ ] Implement proper device recognition and fingerprinting
+- [ ] Add device approval/verification workflow
+- [ ] Enhance device-related logging and notifications
+- [ ] Build suspicious login detection based on device patterns
+- [ ] Create consistent device naming and identification
 
 #### Configuration
 
