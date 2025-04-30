@@ -73,6 +73,7 @@ pnpm dev
 ```
 
 The application will be available at:
+
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:3001
 - API Documentation: http://localhost:3001/api
@@ -88,3 +89,76 @@ MIT License
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Project Roadmap to v1.0
+
+### Core Functionality (✅ Complete)
+
+- Authentication system with Google OAuth
+- Session management with JWT and refresh tokens
+- CSRF protection for all endpoints
+- Comprehensive activity and security logging
+- Admin portal with user management
+- Device tracking and management
+- Type-safe communication between frontend and backend
+
+### Required for v1.0
+
+#### API Standardization
+
+- [ ] Replace all direct fetch calls with apiClient utility
+- [ ] Implement consistent error response handling
+- [ ] Add request/response interceptors for common operations
+
+#### Error Handling
+
+- [ ] Create global exception filter for standardized API responses
+- [ ] Implement proper validation error formatting
+- [ ] Add request ID tracking for error correlation
+
+#### Logging
+
+- [ ] Replace console.log calls with NestJS Logger
+- [ ] Implement structured logging format
+- [ ] Configure appropriate log levels for different environments
+
+#### Testing
+
+- [ ] Increase unit test coverage for auth services to >80%
+- [ ] Add integration tests for critical API endpoints
+- [ ] Implement E2E tests for login and admin flows
+
+#### Documentation
+
+- [ ] Complete API documentation with Swagger
+- [ ] Add detailed setup and configuration guides
+- [ ] Document security features and best practices
+- [ ] Create example implementations and customization guides
+
+#### CI/CD & DevOps
+
+- [ ] Add GitHub Actions workflows for testing
+- [ ] Create Docker and Docker Compose production setup
+- [ ] Add deployment guides for common platforms
+
+#### Performance & Security
+
+- [ ] Implement rate limiting for auth endpoints
+- [ ] Add advanced CSP headers
+- [ ] Complete security audit
+- [ ] Enable database query optimization
+
+#### Configuration
+
+- [ ] Validate all required environment variables on startup
+- [ ] Document configuration options
+- [ ] Provide sensible defaults where possible
+
+### Future Enhancements (v1.x)
+
+- Additional authentication providers (Microsoft, GitHub)
+- Improved analytics dashboard
+- Notification system
+- User roles and permissions system
+- Enhanced mobile support
+- Self-hosted option documentation
