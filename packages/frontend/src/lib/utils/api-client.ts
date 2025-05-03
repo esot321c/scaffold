@@ -60,7 +60,7 @@ async function request<T>(
     // Handle fetch errors (network errors)
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw createApiError(
-        'Network error. Please check your internet connection.',
+        'Unexpected network error. The server may be down or not responding. ',
         undefined,
       );
     }
