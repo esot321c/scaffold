@@ -4,6 +4,21 @@
 
 Scaffold is a production-ready, authentication-first foundation for building modern web applications. It combines the power of NestJS on the backend with Tanstack Router and shadcn/ui on the frontend to provide a complete, type-safe development experience.
 
+## Architecture Decisions
+
+- **Monorepo Structure**: A monorepo approach was chosen to enable sharing TypeScript types between frontend and backend, ensuring complete type safety across the application boundary. This could be broken into separate repos, and the types package could be published as an npm package or hosted in a private package registry (like GitHub Packages, Azure Artifacts, or Nexus Repository) if needed. The monorepo approach simplifies development workflow and ensures types stay in sync during rapid development, while still allowing for future separation if organizational needs require it.
+- **Separate Frontend/Backend**: Rather than using a serverless web app, this architecture provides the flexibility to run background jobs, notification systems, and cron tasks. It also supports multiple client applications (web, Android, iOS) sharing the same backend API.
+- **NestJS for Backend**: Provides a structured, modular architecture with dependency injection, making the codebase maintainable and testable. The patterns established here could be implemented in other backend languages like C#/.NET, Rust, or Go if team expertise or performance requirements change in the future.
+- **PostgreSQL with Prisma**: Offers type-safe database access with migrations, ensuring data integrity and developer productivity.
+- **Redis for Caching**: The system includes Redis infrastructure for performance optimization, allowing efficient caching of external API responses, expensive database queries, or other frequently accessed data. This caching layer can significantly reduce latency and minimize costs when integrating with rate-limited or pay-per-call third-party services.
+- **Session-Based Authentication**: We implemented a hybrid JWT+session approach for auth, providing the flexibility of JWTs while maintaining the security benefits of server-side sessions with explicit invalidation capability.
+- **Comprehensive Security Logging**: Security events are systematically logged and available both to users (for their own activity) and administrators, improving transparency and aiding in security incident response.
+- **CSRF Protection**: All non-GET endpoints are protected by CSRF tokens to prevent cross-site request forgery attacks, with a cookie-based implementation. This is enforced through a global middleware that protects all routes except those explicitly excluded (such as OAuth callbacks), ensuring consistent security across the application.
+- **Automated Token Rotation**: The system implements a scheduled token rotation mechanism that automatically refreshes sessions nearing expiration, enhancing security without disrupting user experience. This helps prevent session hijacking while maintaining seamless authentication.
+- **Configurable Security Log Retention**: The system includes an automated log cleanup service that prunes older security logs according to configurable retention periods. This helps maintain system performance while preserving important security audit trails for an appropriate duration based on organizational requirements.
+- **Device Management**: The system tracks and allows management of authenticated devices, enhancing security by giving users visibility and control over their active sessions.
+- **Admin Module Separation**: Admin functionality is isolated in its own module with separate guards, providing clear separation of concerns.
+
 ## Features
 
 - **Authentication System**: Complete OAuth integration with session management
@@ -167,3 +182,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - User roles and permissions system
 - Enhanced mobile support
 - Self-hosted option documentation
+- Internationalization (i18n) support for multilingual deployments
+- Advanced metrics and telemetry for production monitoring
+- Two-factor authentication options (currently we assume the OAuth providers handle these)
