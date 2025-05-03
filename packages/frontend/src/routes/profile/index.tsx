@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ import {
 import { toast } from 'sonner';
 import { Link } from '@tanstack/react-router';
 import { Shield } from 'lucide-react';
+import { apiClient } from '@/lib/utils/api-client';
+import { useMutation } from '@tanstack/react-query';
 
 export const Route = createFileRoute('/profile/')({
   component: ProfilePage,
@@ -23,15 +25,43 @@ export const Route = createFileRoute('/profile/')({
 
 function ProfilePage() {
   const { user, refreshUser } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Create form state from user data
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    companyName: user?.companyName || '',
-    phone: user?.phone || '',
-    address: user?.address || '',
-    website: user?.website || '',
+    name: user?.name ?? '',
+    companyName: user?.companyName ?? '',
+    phone: user?.phone ?? '',
+    address: user?.address ?? '',
+    website: user?.website ?? '',
+  });
+
+  // Update form data when user data changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name ?? '',
+        companyName: user.companyName ?? '',
+        phone: user.phone ?? '',
+        address: user.address ?? '',
+        website: user.website ?? '',
+      });
+    }
+  }, [user]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: typeof formData) =>
+      apiClient.patch('users/profile', data),
+    onSuccess: () => {
+      refreshUser();
+      toast('Profile updated', {
+        description: 'Your profile information has been saved successfully.',
+      });
+    },
+    onError: (error) => {
+      toast('Update failed', {
+        description:
+          error instanceof Error ? error.message : 'Something went wrong',
+      });
+    },
   });
 
   const handleChange = (
@@ -43,41 +73,7 @@ function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/users/profile`,
-        {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': document.cookie.replace(
-              /(?:(?:^|.*;\s*)csrf_token\s*=\s*([^;]*).*$)|^.*$/,
-              '$1',
-            ),
-          },
-          body: JSON.stringify(formData),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-
-      await refreshUser();
-      toast('Profile updated', {
-        description: 'Your profile information has been saved successfully.',
-      });
-    } catch (error) {
-      toast('Update failed', {
-        description:
-          error instanceof Error ? error.message : 'Something went wrong',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    updateProfileMutation.mutate(formData);
   };
 
   return (
@@ -98,7 +94,7 @@ function ProfilePage() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
-                  value={user?.email || ''}
+                  value={user?.email ?? ''}
                   disabled
                   className="bg-muted/50"
                 />
@@ -167,8 +163,8 @@ function ProfilePage() {
             </CardContent>
 
             <CardFooter className="flex justify-end">
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save Changes'}
+              <Button type="submit" disabled={updateProfileMutation.isPending}>
+                {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </CardFooter>
           </form>
