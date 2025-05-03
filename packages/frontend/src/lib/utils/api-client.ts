@@ -1,4 +1,6 @@
 import Cookies from 'js-cookie';
+import { createApiError } from './api-errors';
+import type { ApiError } from './api-errors';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -24,44 +26,56 @@ async function request<T>(
     }
   }
 
-  const response = await fetch(`${API_URL}/${endpoint}`, {
-    ...options,
-    headers,
-    credentials: 'include', // Important for cookies
-  });
+  try {
+    const response = await fetch(`${API_URL}/${endpoint}`, {
+      ...options,
+      headers,
+      credentials: 'include', // Important for cookies
+    });
 
-  if (!response.ok) {
-    // Try to get error message from response
-    let errorMessage = 'An unknown error occurred';
-    let errorData = {};
+    if (!response.ok) {
+      // Try to get error message from response
+      let errorMessage = 'An unknown error occurred';
+      let errorData = {};
 
-    try {
-      const data = await response.json();
-      errorMessage = data.message ?? errorMessage;
-      errorData = data;
-    } catch (e) {
-      // If parsing fails, use status text
-      errorMessage = response.statusText ?? errorMessage;
+      try {
+        const data = await response.json();
+        errorMessage = data.message ?? errorMessage;
+        errorData = data;
+      } catch (e) {
+        // If parsing fails, use status text
+        errorMessage = response.statusText ?? errorMessage;
+      }
+
+      throw createApiError(errorMessage, response.status, errorData);
     }
 
-    // Create an error object with status code and response data
-    const error = new Error(errorMessage) as Error & {
-      status?: number;
-      data?: any;
-    };
+    // Handle empty responses
+    if (response.status === 204) {
+      return {} as T;
+    }
 
-    error.status = response.status;
-    error.data = errorData;
+    return response.json();
+  } catch (error) {
+    // Handle fetch errors (network errors)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw createApiError(
+        'Network error. Please check your internet connection.',
+        undefined,
+      );
+    }
 
-    throw error;
+    // Rethrow ApiErrors
+    if ((error as ApiError).type) {
+      throw error;
+    }
+
+    // Handle other errors
+    throw createApiError(
+      error instanceof Error ? error.message : 'An unknown error occurred',
+      undefined,
+    );
   }
-
-  // Handle empty responses
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return response.json();
 }
 
 export const apiClient = {
@@ -92,3 +106,6 @@ export const apiClient = {
   delete: <T>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: 'DELETE' }),
 };
+
+// Re-export error types
+export * from './api-errors';

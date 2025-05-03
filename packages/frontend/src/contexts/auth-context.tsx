@@ -31,11 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       const userData = await apiClient.get<UserWithSession>('users/me');
       setUser(userData);
+      setError(null);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'An unknown error occurred',
       );
-      console.error(err);
+      console.error('User fetch error:', err);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -46,8 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await apiClient.post('auth/logout');
       setUser(null);
+      setError(null);
     } catch (err) {
       console.error('Logout error:', err);
+      // Don't set error here as logout failures shouldn't block the UI
     }
   };
 
@@ -60,21 +63,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
 
-    const checkInterval = setInterval(async () => {
+    const checkSession = async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/users/session`,
-          { credentials: 'include' },
-        );
-
-        if (!response.ok) {
-          setUser(null);
-        }
+        await apiClient.get('users/session');
+        // Session is still valid if no error is thrown
       } catch (err) {
-        console.error('Failed to check session:', err);
+        // Session is invalid or expired
+        setUser(null);
       }
-    }, SESSION_CHECK_INTERVAL);
+    };
 
+    const checkInterval = setInterval(checkSession, SESSION_CHECK_INTERVAL);
     return () => clearInterval(checkInterval);
   }, [user]);
 
