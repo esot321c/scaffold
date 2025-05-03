@@ -14,9 +14,12 @@ import { UsersController } from './users/users.controller';
 import { UsersModule } from './users/users.module';
 import { CsrfMiddleware } from './auth/middleware/csrf.middleware';
 import { AdminModule } from './admin/admin.module';
+import { CommonModule } from './common/common.module';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
 @Module({
   imports: [
+    CommonModule,
     AppConfigModule,
     PrismaModule,
     RedisModule,
@@ -29,6 +32,8 @@ import { AdminModule } from './admin/admin.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+
     consumer
       .apply(CsrfMiddleware)
       .exclude(

@@ -2,14 +2,20 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
 
 async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
 
+    // Get the filter from the app container to enable DI
+    const httpExceptionFilter = app.get(HttpExceptionFilter);
+    app.useGlobalFilters(httpExceptionFilter);
+
+    // Apply Helmet middleware for security headers
     app.use(
       helmet({
         contentSecurityPolicy: {
@@ -31,6 +37,26 @@ async function bootstrap() {
       new ValidationPipe({
         transform: true,
         transformOptions: { enableImplicitConversion: true },
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        exceptionFactory: (errors) => {
+          const formattedErrors = errors.reduce((acc, error) => {
+            const property = error.property;
+            const messages = Object.values(error.constraints || {});
+
+            if (!acc[property]) {
+              acc[property] = [];
+            }
+
+            acc[property].push(...messages);
+            return acc;
+          }, {});
+
+          throw new BadRequestException({
+            message: 'Validation failed',
+            errors: formattedErrors,
+          });
+        },
       }),
     );
 

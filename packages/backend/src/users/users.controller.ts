@@ -9,7 +9,7 @@ import {
   ForbiddenException,
   Post,
   Body,
-  Res,
+  Patch,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
@@ -26,6 +26,7 @@ import {
   AuthEventType,
 } from '../auth/services/activity-log.service';
 import { DeviceInfoDto } from 'src/auth/dto/mobile-auth.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -70,6 +71,17 @@ export class UsersController {
       ...user,
       session: session,
     };
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Update user profile' })
+  async updateProfile(
+    @CurrentUser() user: User,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(user.id, updateProfileDto);
   }
 
   @Get('session')

@@ -46,7 +46,7 @@ function AuthSuccess() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="container mx-auto flex flex-col items-center justify-center min-h-[60vh] p-6">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
         <p className="text-muted-foreground">Completing login...</p>
       </div>
@@ -55,7 +55,7 @@ function AuthSuccess() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <div className="container mx-auto flex flex-col items-center justify-center min-h-[60vh] p-6">
         <div className="max-w-md w-full">
           <AuthErrorAlert title="Authentication Error" message={error} />
           <p className="mb-4 text-center">
@@ -78,7 +78,7 @@ function AuthSuccess() {
 
   // Success UI with countdown
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+    <div className="container mx-auto flex flex-col items-center justify-center min-h-[60vh] p-6">
       <div className="bg-card p-6 rounded-lg shadow-md max-w-md w-full">
         <h2 className="text-2xl font-bold mb-4">Login Successful!</h2>
         <p className="mb-6">
