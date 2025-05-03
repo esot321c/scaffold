@@ -7,6 +7,8 @@ export const validationSchema = Joi.object({
   PORT: Joi.number().default(3001),
   BASE_URL: Joi.string().required(),
 
+  DATABASE_ENCRYPTION_KEY: Joi.string().required(),
+
   // Auth
   JWT_SECRET: Joi.string().required(),
 
@@ -29,6 +31,8 @@ export interface EnvironmentVariables {
   NODE_ENV: string;
   BASE_URL: string;
   PORT: number;
+
+  DATABASE_ENCRYPTION_KEY: string;
 
   // Auth
   JWT_SECRET: string;

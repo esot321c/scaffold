@@ -13,6 +13,9 @@ import { AppConfig } from 'src/config/configuration';
           store: redisStore,
           url: configService.redisConfig.url,
           ttl: 60 * 60, // 1 hour
+          max: 10000,
+          // Note: PII hash values could use a separate prefix within the code
+          // prefix: 'app:', // Prefix for all keys
         };
       },
     }),

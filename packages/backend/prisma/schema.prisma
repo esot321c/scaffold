@@ -93,15 +93,20 @@ enum UserRole {
   SUPER_ADMIN
 }
 
+// Encrypted fields are TEXT not STRING
+// Because encrypted data can be much longer than the original
 model User {
   id              String    @id @default(cuid())
-  email           String    @unique
-  name            String?   
+  email           String    @db.Text  // Encrypted PII
+  emailHash       String    @unique @map("email_hash")  // For lookups
+  name            String?   @db.Text  // Encrypted PII
+  nameHash        String?   @map("name_hash") // For lookups
   companyName     String?   @map("company_name")
-  companyLogo     String?   @map("company_logo") // URL to stored logo
-  phone           String?   
-  address         String?   
-  website         String?   
+  companyLogo     String?   @map("company_logo") 
+  phone           String?   @db.Text  // Encrypted PII
+  phoneHash       String?   @map("phone_hash")// For lookups
+  address         String?   @db.Text  // Encrypted PII
+  website         String?  
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt      @map("updated_at")
   role            UserRole  @default(USER) @map("user_role")
@@ -110,5 +115,7 @@ model User {
   devices         Device[]
   authActivities  AuthActivity[]
 
+  @@index([nameHash])
+  @@index([phoneHash])
   @@map("users")
 }
