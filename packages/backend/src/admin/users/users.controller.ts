@@ -7,24 +7,38 @@ import {
   Body,
   Query,
   BadRequestException,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../guards/admin/admin.guard';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UserRole } from '../../generated/prisma';
+import { LoggingService } from '@/logging/services/logging/logging.service';
 
 @ApiTags('admin')
 @Controller('admin/users')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')
 export class AdminUsersController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private loggingService: LoggingService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all users with basic stats' })
-  async getAllUsers() {
-    // Find all users with session count and last login
+  async getAllUsers(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalUsers = await this.prisma.user.count();
+
+    // Find users with pagination
     const users = await this.prisma.user.findMany({
       select: {
         id: true,
@@ -44,36 +58,41 @@ export class AdminUsersController {
             },
           },
         },
-        // Get last login from auth activities
-        authActivities: {
-          where: {
-            event: 'login',
-            successful: true,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 1,
-          select: {
-            createdAt: true,
-          },
-        },
       },
       orderBy: {
         createdAt: 'desc',
       },
+      skip,
+      take: limit,
     });
 
+    // Get all user IDs
+    const userIds = users.map((user) => user.id);
+
+    // Get last login for each user using the optimized method
+    const lastLoginMap = await this.loggingService.getLastLoginByUsers(userIds);
+
     // Transform the data into the expected format
-    return users.map((user) => ({
+    const formattedUsers = users.map((user) => ({
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
       createdAt: user.createdAt,
-      lastLoginAt: user.authActivities[0]?.createdAt || null,
+      lastLoginAt: lastLoginMap.get(user.id) || null,
       sessionCount: user._count.sessions,
     }));
+
+    // Return with pagination info
+    return {
+      users: formattedUsers,
+      pagination: {
+        total: totalUsers,
+        page,
+        limit,
+        pages: Math.ceil(totalUsers / limit),
+      },
+    };
   }
 
   @Put(':id/role')

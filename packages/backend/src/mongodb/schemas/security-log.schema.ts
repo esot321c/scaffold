@@ -1,5 +1,5 @@
+import { SecurityLog } from '@/logging/interfaces/log.types';
 import { Schema } from 'mongoose';
-import { SecurityLog } from '../interfaces/log.types';
 
 export const SecurityLogSchema = new Schema<SecurityLog>(
   {

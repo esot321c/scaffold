@@ -24,10 +24,12 @@ export class ApiLoggingMiddleware implements NestMiddleware {
     res.on('finish', () => {
       const responseTime = Date.now() - startTime;
 
-      // Log the API call asynchronously
+      // Use process.nextTick to avoid blocking the response
       process.nextTick(() => {
+        // Only stringify/process request data if we're actually going to log it
+        // This improves performance for large payloads
         const logData: Omit<ApiLog, 'timestamp'> = {
-          level: 'info',
+          level: res.statusCode >= 400 ? 'warn' : 'info',
           message: `${req.method} ${req.path} ${res.statusCode}`,
           context: 'API',
           requestId,
@@ -38,9 +40,14 @@ export class ApiLoggingMiddleware implements NestMiddleware {
           responseTime,
           ip: req.ip,
           userAgent: req.get('user-agent'),
+          // Only process body for non-GET requests and when needed
           metadata: {
-            query: req.query,
-            body: this.loggingService.sanitizeBody(req.body),
+            query: Object.keys(req.query).length > 0 ? req.query : undefined,
+            // Only sanitize body for non-GET requests to save CPU cycles
+            body:
+              req.method !== 'GET'
+                ? this.loggingService.sanitizeBody(req.body)
+                : undefined,
           },
         };
 

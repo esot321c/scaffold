@@ -12,6 +12,7 @@ import {
 } from '@/logging/interfaces/log.types';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PaginatedResponse } from '@scaffold/types';
+import { AuthEventType } from '@/logging/interfaces/event-types';
 
 @Injectable()
 export class LoggingService implements OnModuleInit {
@@ -24,9 +25,8 @@ export class LoggingService implements OnModuleInit {
   constructor(
     private configService: ConfigService,
     private prismaService: PrismaService,
-    @InjectModel('ApiLog', 'logging') private apiLogModel: Model<ApiLog>,
-    @InjectModel('SecurityLog', 'logging')
-    private securityLogModel: Model<SecurityLog>,
+    @InjectModel('ApiLog') private apiLogModel: Model<ApiLog>,
+    @InjectModel('SecurityLog') private securityLogModel: Model<SecurityLog>,
   ) {
     // Determine which transports to enable
     this.mongoEnabled =
@@ -181,8 +181,18 @@ export class LoggingService implements OnModuleInit {
     } catch (error) {
       this.logger.error('Failed to setup TTL indexes', {
         context: 'LoggingService',
-        error,
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
+        mongoEnabled: this.mongoEnabled,
       });
+
+      // TODO: add a fallback mechanism or retry logic here
+      if (process.env.NODE_ENV === 'production') {
+        // Maybe set up a health check that can alert ops if TTL indexes aren't working
+        // This could prevent the database from growing indefinitely
+      }
     }
   }
 
@@ -244,7 +254,19 @@ export class LoggingService implements OnModuleInit {
   async getSecurityLogs(
     filter: SecurityLogFilter,
   ): Promise<PaginatedResponse<SecurityLog>> {
-    const { page = 1, limit = 50, userId, event, success, search } = filter;
+    const {
+      page = 1,
+      limit = 50,
+      userId,
+      userIds,
+      event,
+      success,
+      search,
+      fromDate,
+      toDate,
+      includeDetails = true,
+    } = filter;
+
     const skip = (page - 1) * limit;
 
     // Build filter criteria
@@ -254,12 +276,29 @@ export class LoggingService implements OnModuleInit {
       query.userId = userId;
     }
 
+    if (userIds && userIds.length > 0) {
+      query.userId = { $in: userIds };
+    }
+
     if (event) {
       query.event = event;
     }
 
     if (success !== undefined) {
       query.success = success;
+    }
+
+    // Add date range filtering
+    if (fromDate || toDate) {
+      query.timestamp = {};
+
+      if (fromDate) {
+        query.timestamp.$gte = fromDate;
+      }
+
+      if (toDate) {
+        query.timestamp.$lte = toDate;
+      }
     }
 
     if (search) {
@@ -274,9 +313,12 @@ export class LoggingService implements OnModuleInit {
     // Get total count for pagination
     const total = await this.securityLogModel.countDocuments(query);
 
+    // Define projection for better performance when details aren't needed
+    const projection = includeDetails ? {} : { details: 0 };
+
     // Get logs with pagination
     const logs = await this.securityLogModel
-      .find(query)
+      .find(query, projection)
       .sort({ timestamp: -1 })
       .skip(skip)
       .limit(limit)
@@ -358,6 +400,44 @@ export class LoggingService implements OnModuleInit {
         pages: Math.ceil(total / limit),
       },
     };
+  }
+
+  /**
+   * Get the last login date for each user in a list
+   * This uses MongoDB aggregation for optimal performance
+   */
+  async getLastLoginByUsers(userIds: string[]): Promise<Map<string, Date>> {
+    if (!userIds.length) return new Map();
+
+    // Use aggregation to efficiently get the last login for each user
+    const results = await this.securityLogModel
+      .aggregate([
+        {
+          $match: {
+            userId: { $in: userIds },
+            event: AuthEventType.LOGIN,
+            success: true,
+          },
+        },
+        {
+          $sort: { timestamp: -1 },
+        },
+        {
+          $group: {
+            _id: '$userId',
+            lastLogin: { $first: '$timestamp' },
+          },
+        },
+      ])
+      .exec();
+
+    // Create the map
+    const lastLoginMap = new Map<string, Date>();
+    results.forEach((result) => {
+      lastLoginMap.set(result._id, result.lastLogin);
+    });
+
+    return lastLoginMap;
   }
 
   /**
@@ -453,5 +533,49 @@ export class LoggingService implements OnModuleInit {
     }
 
     return sanitized;
+  }
+
+  /**
+   * Get recent security activities for a specific user
+   * @param userId The user ID to get activities for
+   * @param options Optional filtering and pagination options
+   */
+  async getRecentActivities(
+    userId: string,
+    options: {
+      limit?: number;
+      includeEvents?: AuthEventType[];
+      excludeEvents?: AuthEventType[];
+      fromDate?: Date;
+    } = {},
+  ): Promise<SecurityLog[]> {
+    const { limit = 20, includeEvents, excludeEvents, fromDate } = options;
+
+    // Build query to get recent security logs for the user
+    const query: Record<string, any> = {
+      userId: userId,
+    };
+
+    // Add event filtering if specified
+    if (includeEvents && includeEvents.length > 0) {
+      query.event = { $in: includeEvents };
+    } else if (excludeEvents && excludeEvents.length > 0) {
+      query.event = { $nin: excludeEvents };
+    }
+
+    // Add date filtering if specified
+    if (fromDate) {
+      query.timestamp = { $gte: fromDate };
+    }
+
+    // Find the logs, sorted by newest first
+    const logs = await this.securityLogModel
+      .find(query)
+      .sort({ timestamp: -1 })
+      .limit(limit)
+      .lean()
+      .exec();
+
+    return logs;
   }
 }

@@ -34,12 +34,16 @@ export interface LogFilter {
   page?: number;
   limit?: number;
   search?: string;
+  fromDate?: Date;
+  toDate?: Date;
 }
 
 export interface SecurityLogFilter extends LogFilter {
   userId?: string;
+  userIds?: string[];
   event?: AuthEventType;
   success?: boolean;
+  includeDetails?: boolean;
 }
 
 export interface ApiLogFilter extends LogFilter {
