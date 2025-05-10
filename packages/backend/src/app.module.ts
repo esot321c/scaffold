@@ -16,11 +16,14 @@ import { CsrfMiddleware } from './auth/middleware/csrf.middleware';
 import { AdminModule } from './admin/admin.module';
 import { CommonModule } from './common/common.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { LoggingModule } from './logging/logging.module';
+import { ApiLoggingMiddleware } from './logging/middleware/api-logging.middleware';
 
 @Module({
   imports: [
     CommonModule,
     AppConfigModule,
+    LoggingModule,
     PrismaModule,
     RedisModule,
     AuthModule,
@@ -33,6 +36,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(RequestIdMiddleware).forRoutes('*');
+
+    consumer.apply(ApiLoggingMiddleware).forRoutes('*');
 
     consumer
       .apply(CsrfMiddleware)

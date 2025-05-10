@@ -1,13 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { AuthCookieService } from './services/auth-cookie.service';
-import { ActivityLogService } from './services/activity-log.service';
+import { AuthCookieService } from '../auth-cookie/auth-cookie.service';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let activityLogService: ActivityLogService;
 
   // Mock objects for all dependencies
   const mockPrismaService = {
@@ -45,12 +43,10 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: AuthCookieService, useValue: mockAuthCookieService },
-        { provide: ActivityLogService, useValue: mockActivityLogService },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    activityLogService = module.get<ActivityLogService>(ActivityLogService);
   });
 
   afterEach(() => {
@@ -146,17 +142,6 @@ describe('AuthService', () => {
       accessToken: 'test-jwt-token',
       sessionId: mockSession.id,
     });
-
-    // Verify activity logging
-    expect(activityLogService.logActivity).toHaveBeenCalledWith(
-      mockUser.id,
-      'login',
-      true,
-      expect.objectContaining({
-        ipAddress,
-        userAgent,
-      }),
-    );
   });
 
   // New test for refreshAccessToken
@@ -202,21 +187,6 @@ describe('AuthService', () => {
       email: mockSession.user.email,
       sessionId,
     });
-
-    // Verify activity logging
-    expect(activityLogService.logActivity).toHaveBeenCalledWith(
-      userId,
-      'token_refresh',
-      true,
-      expect.objectContaining({
-        ipAddress,
-        userAgent,
-        details: expect.objectContaining({
-          sessionId,
-          tokenType: 'access',
-        }),
-      }),
-    );
   });
 
   // Test for session invalidation

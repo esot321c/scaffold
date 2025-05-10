@@ -13,29 +13,27 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
-import { AuthService } from './auth.service';
-import { AppConfig } from '../config/configuration';
+import { AuthService } from './services/auth/auth.service';
+import { AppConfig } from '@/config/configuration';
 import { ApiBody, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OAuthUser } from './interfaces/oauth-user.interface';
-import { AuthCookieService } from './services/auth-cookie.service';
 import { MobileAuthDto } from './dto/mobile-auth.dto';
-import {
-  ActivityLogService,
-  AuthEventType,
-} from './services/activity-log.service';
+import { AuthCookieService } from './services/auth-cookie/auth-cookie.service';
+import { AuthEventType } from '@/logging/interfaces/event-types';
+import { LoggingService } from '@/logging/services/logging/logging.service';
 
 @Controller('auth')
 export class AuthController {
-  private readonly logger = new Logger(ActivityLogService.name);
+  private readonly logger = new Logger(AuthController.name);
 
   constructor(
     private authService: AuthService,
     private config: AppConfig,
     private prisma: PrismaService,
     private cookieService: AuthCookieService,
-    private activityLogService: ActivityLogService,
+    private readonly loggingService: LoggingService,
   ) {}
 
   @Get('google')
@@ -77,22 +75,22 @@ export class AuthController {
         await this.authService.invalidateSession(user.sessionId);
 
         // Log logout event
-        await this.activityLogService.logActivity(
-          user.id,
-          AuthEventType.LOGOUT,
-          true,
-          {
-            ipAddress: req.ip,
-            userAgent: req.headers['user-agent'],
-            sessionId: user.sessionId,
-            details: {
-              logoutMethod: 'user_initiated',
-            },
+        await this.loggingService.logSecurityEvent({
+          level: 'info',
+          userId: user.id,
+          event: AuthEventType.LOGOUT,
+          success: true,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+          sessionId: user.sessionId,
+          requestId: req.headers['x-request-id'] as string,
+          details: {
+            logoutMethod: 'user_initiated',
           },
-        );
+        });
       }
     } catch (error) {
-      console.error('Error during logout:', error);
+      this.logger.error('Error during logout:', error);
     }
 
     this.cookieService.clearCookie(res);
@@ -138,21 +136,19 @@ export class AuthController {
 
     await this.authService.invalidateSession(id);
 
-    // Log session invalidation
-    await this.activityLogService.logActivity(
-      user.id,
-      AuthEventType.SESSION_EXPIRED,
-      true,
-      {
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-        details: {
-          sessionId: id,
-          terminationType: 'user_terminated',
-          currentSessionId: user.sessionId,
-        },
+    await this.loggingService.logSecurityEvent({
+      level: 'info',
+      userId: user.id,
+      event: AuthEventType.SESSION_EXPIRED,
+      success: true,
+      sessionId: id,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      requestId: req.headers['x-request-id'] as string,
+      details: {
+        terminationType: 'user_terminated',
       },
-    );
+    });
 
     return { success: true };
   }
@@ -164,19 +160,19 @@ export class AuthController {
     const user = req.user as OAuthUser;
 
     // Log this security action
-    await this.activityLogService.logActivity(
-      user.id,
-      AuthEventType.LOGOUT,
-      true,
-      {
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-        details: {
-          logoutMethod: 'user_terminated_all',
-          currentSessionId: user.sessionId,
-        },
+    await this.loggingService.logSecurityEvent({
+      level: 'info',
+      userId: user.id,
+      event: AuthEventType.SESSION_EXPIRED,
+      success: true,
+      sessionId: user.sessionId,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      requestId: req.headers['x-request-id'] as string,
+      details: {
+        terminationType: 'user_terminated_all',
       },
-    );
+    });
 
     // Invalidate all user sessions except current one
     await this.authService.invalidateAllUserSessions(user.id);

@@ -20,11 +20,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UserWithSession } from '@scaffold/types';
 import { RequestWithUser } from './interfaces/user-request.interface';
 import { AuthCookieService } from '../auth/services/auth-cookie.service';
-import { DeviceService } from '../auth/services/device.service';
+import { DeviceService } from '../auth/services/device/device.service';
 import {
   ActivityLogService,
   AuthEventType,
-} from '../auth/services/activity-log.service';
+} from '../auth/services/activity-log/activity-log.service';
 import { DeviceInfoDto } from 'src/auth/dto/mobile-auth.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 

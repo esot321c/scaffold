@@ -32,8 +32,27 @@ services:
       timeout: 5s
       retries: 5
 
+  scaffold-mongo:
+    container_name: scaffold-mongo
+    image: mongo:7.0
+    ports:
+      - '${MONGODB_PORT:-27017}:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGO_INITDB_DATABASE: logging
+    volumes:
+      - scaffold_mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   scaffold_postgres_data:
     name: scaffold_postgres_data
   scaffold_redis_data:
     name: scaffold_redis_data
+  scaffold_mongo_data:
+    name: scaffold_mongo_data

@@ -1,13 +1,11 @@
+import { AuthEventType } from '@/logging/interfaces/event-types';
+import { LoggingService } from '@/logging/services/logging/logging.service';
 import { Injectable, NestMiddleware, ForbiddenException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import {
-  ActivityLogService,
-  AuthEventType,
-} from '../services/activity-log.service';
 
 @Injectable()
 export class CsrfMiddleware implements NestMiddleware {
-  constructor(private activityLogService: ActivityLogService) {}
+  constructor(private readonly loggingService: LoggingService) {}
   use(req: Request, res: Response, next: NextFunction) {
     // Skip for GET, HEAD, OPTIONS requests (they should be idempotent)
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
@@ -38,20 +36,20 @@ export class CsrfMiddleware implements NestMiddleware {
         }
 
         if (userId) {
-          this.activityLogService.logActivity(
-            userId,
-            AuthEventType.CSRF_FAILURE,
-            false,
-            {
-              ipAddress: req.ip,
-              userAgent: req.headers['user-agent'],
-              details: {
-                reason: 'invalid_csrf_token',
-                requestPath: req.path,
-                requestMethod: req.method,
-              },
+          this.loggingService.logSecurityEvent({
+            level: 'warn', // Security violations should be warnings
+            userId: userId,
+            event: AuthEventType.CSRF_FAILURE,
+            success: false,
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'],
+            requestId: req.headers['x-request-id'] as string,
+            details: {
+              reason: 'invalid_csrf_token',
+              requestPath: req.path,
+              requestMethod: req.method,
             },
-          );
+          });
         }
       }
 
