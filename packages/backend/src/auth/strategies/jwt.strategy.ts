@@ -7,7 +7,7 @@ import { Request } from 'express';
 import {
   ActivityLogService,
   AuthEventType,
-} from '../services/activity-log.service';
+} from '../services/activity-log/activity-log.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

@@ -9,10 +9,10 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthCookieService } from './services/auth-cookie.service';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ActivityLogService } from './services/activity-log.service';
-import { DeviceService } from './services/device.service';
-import { TokenRotationService } from './services/token-rotation.service';
-import { LogCleanupService } from './services/log-cleanup.service';
+import { ActivityLogService } from './services/activity-log/activity-log.service';
+import { DeviceService } from './services/device/device.service';
+import { TokenRotationService } from './services/token-rotation/token-rotation.service';
+import { LogCleanupService } from './services/log-cleanup/log-cleanup.service';
 
 @Module({
   imports: [

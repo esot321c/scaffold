@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthCookieService } from './auth-cookie.service';
-import { AppConfig } from '../../config/configuration';
+import { AppConfig } from '@/config/configuration';
 import { Response } from 'express';
 
 describe('AuthCookieService', () => {

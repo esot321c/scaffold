@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
+
 import { AppConfig } from '../config/configuration';
-import { AuthCookieService } from './services/auth-cookie.service';
+
 import { Request, Response } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ActivityLogService } from './services/activity-log.service';
+import { AuthService } from './services/auth/auth.service';
+import { AuthCookieService } from './services/auth-cookie/auth-cookie.service';
 
 // Create mocks
 const mockAuthService = {
@@ -40,7 +41,6 @@ const mockActivityLogService = {
 describe('AuthController', () => {
   let controller: AuthController;
   let authService: AuthService;
-  let activityLogService: ActivityLogService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -50,13 +50,11 @@ describe('AuthController', () => {
         { provide: AppConfig, useValue: mockConfig },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: AuthCookieService, useValue: mockCookieService },
-        { provide: ActivityLogService, useValue: mockActivityLogService },
       ],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
     authService = module.get<AuthService>(AuthService);
-    activityLogService = module.get<ActivityLogService>(ActivityLogService);
   });
 
   afterEach(() => {

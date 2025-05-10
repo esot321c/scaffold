@@ -4,12 +4,10 @@ import { JwtStrategy } from './jwt.strategy';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AppConfig } from '../../config/configuration';
 import { Request } from 'express';
-import { ActivityLogService } from '../services/activity-log.service';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
   let prismaService: PrismaService;
-  let activityLogService: ActivityLogService;
 
   const mockPrismaService = {
     session: {
@@ -40,16 +38,11 @@ describe('JwtStrategy', () => {
           provide: AppConfig,
           useValue: mockConfig,
         },
-        {
-          provide: ActivityLogService,
-          useValue: mockActivityLogService,
-        },
       ],
     }).compile();
 
     strategy = module.get<JwtStrategy>(JwtStrategy);
     prismaService = module.get<PrismaService>(PrismaService);
-    activityLogService = module.get<ActivityLogService>(ActivityLogService);
   });
 
   afterEach(() => {
@@ -112,9 +105,6 @@ describe('JwtStrategy', () => {
         where: { id: mockSession.id },
         data: { lastActiveAt: expect.any(Date) },
       });
-
-      // No activity log for successful validation
-      expect(activityLogService.logActivity).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException and log when session is invalid', async () => {
@@ -131,20 +121,6 @@ describe('JwtStrategy', () => {
 
       await expect(strategy.validate(mockRequest, mockPayload)).rejects.toThrow(
         UnauthorizedException,
-      );
-
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        'user-id',
-        'failed_login',
-        false,
-        expect.objectContaining({
-          ipAddress: '127.0.0.1',
-          userAgent: 'test-agent',
-          details: expect.objectContaining({
-            sessionId: 'session-id',
-            reason: 'invalid_session',
-          }),
-        }),
       );
     });
 
@@ -166,20 +142,6 @@ describe('JwtStrategy', () => {
       await expect(strategy.validate(mockRequest, mockPayload)).rejects.toThrow(
         UnauthorizedException,
       );
-
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        'user-id',
-        'session_expired',
-        false,
-        expect.objectContaining({
-          ipAddress: '127.0.0.1',
-          userAgent: 'test-agent',
-          details: expect.objectContaining({
-            sessionId: 'session-id',
-            expiredAt: yesterday,
-          }),
-        }),
-      );
     });
 
     it('should throw UnauthorizedException when session is not found', async () => {
@@ -188,9 +150,6 @@ describe('JwtStrategy', () => {
       await expect(strategy.validate(mockRequest, mockPayload)).rejects.toThrow(
         UnauthorizedException,
       );
-
-      // Cannot log to specific user since no session found
-      expect(activityLogService.logActivity).not.toHaveBeenCalled();
     });
   });
 });

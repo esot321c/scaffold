@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '../../prisma/prisma.service';
-import { AuthService } from '../auth.service';
-import { ActivityLogService, AuthEventType } from './activity-log.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { AuthService } from '../auth/auth.service';
+import { LoggingService } from '@/logging/services/logging/logging.service';
+import { AuthEventType } from '@/logging/interfaces/event-types';
 
 @Injectable()
 export class TokenRotationService {
@@ -11,7 +12,7 @@ export class TokenRotationService {
   constructor(
     private prisma: PrismaService,
     private authService: AuthService,
-    private activityLogService: ActivityLogService,
+    private readonly loggingService: LoggingService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
@@ -48,22 +49,20 @@ export class TokenRotationService {
         // Invalidate old session
         await this.authService.invalidateSession(session.id);
 
-        // Log the activity
-        await this.activityLogService.logActivity(
-          session.userId,
-          AuthEventType.TOKEN_REFRESH,
-          true,
-          {
-            ipAddress: session.ipAddress ?? undefined,
-            userAgent: session.userAgent ?? undefined,
-            sessionId: newSession.id,
-            details: {
-              previousSessionId: session.id,
-              rotationType: 'automatic',
-              reason: 'expiration_prevention',
-            },
+        await this.loggingService.logSecurityEvent({
+          level: 'info',
+          userId: session.userId,
+          event: AuthEventType.TOKEN_REFRESH,
+          success: true,
+          ipAddress: session.ipAddress ?? undefined,
+          userAgent: session.userAgent ?? undefined,
+          sessionId: newSession.id,
+          details: {
+            previousSessionId: session.id,
+            rotationType: 'automatic',
+            reason: 'expiration_prevention',
           },
-        );
+        });
 
         this.logger.debug(`Rotated session for user ${session.userId}`);
       } catch (error) {

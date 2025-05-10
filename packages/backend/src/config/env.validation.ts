@@ -23,6 +23,20 @@ export const validationSchema = Joi.object({
 
   // PostgreSQL
   DATABASE_URL: Joi.string().required(),
+
+  // MongoDB
+  MONGODB_URI: Joi.string().default('mongodb://localhost:27017/logging'),
+  MONGODB_USER: Joi.string().optional(),
+  MONGODB_PASSWORD: Joi.string().optional(),
+
+  // Logging
+  LOG_LEVEL: Joi.string()
+    .valid('error', 'warn', 'info', 'debug')
+    .default('info'),
+  LOG_DIR: Joi.string().default('logs'),
+  LOGGING_MONGO_ENABLED: Joi.boolean().default(true),
+  LOGGING_FILE_ENABLED: Joi.boolean().default(true),
+  LOGGING_DEFAULT_RETENTION_DAYS: Joi.number().default(30),
 });
 
 export interface EnvironmentVariables {
@@ -46,4 +60,16 @@ export interface EnvironmentVariables {
 
   // PostgreSQL
   DATABASE_URL: string;
+
+  // MongoDB
+  MONGODB_URI: string;
+  MONGODB_USER?: string;
+  MONGODB_PASSWORD?: string;
+
+  // Logging
+  LOG_LEVEL: string;
+  LOG_DIR: string;
+  LOGGING_MONGO_ENABLED: boolean;
+  LOGGING_FILE_ENABLED: boolean;
+  LOGGING_DEFAULT_RETENTION_DAYS: number;
 }

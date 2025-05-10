@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
-import { AppConfig } from '../../config/configuration';
+import { AppConfig } from '@/config/configuration';
 import * as crypto from 'crypto';
 
 @Injectable()

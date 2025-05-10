@@ -62,22 +62,6 @@ CREATE TABLE "devices" (
 );
 
 -- CreateTable
-CREATE TABLE "auth_activities" (
-    "id" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
-    "event" TEXT NOT NULL,
-    "ip_address" TEXT,
-    "user_agent" TEXT,
-    "device_id" TEXT,
-    "session_id" TEXT,
-    "successful" BOOLEAN NOT NULL DEFAULT true,
-    "details" JSONB,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "auth_activities_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -107,9 +91,6 @@ CREATE UNIQUE INDEX "sessions_token_key" ON "sessions"("token");
 CREATE UNIQUE INDEX "devices_user_id_device_id_key" ON "devices"("user_id", "device_id");
 
 -- CreateIndex
-CREATE INDEX "auth_activities_user_id_created_at_idx" ON "auth_activities"("user_id", "created_at");
-
--- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- AddForeignKey
@@ -120,6 +101,3 @@ ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY ("user
 
 -- AddForeignKey
 ALTER TABLE "devices" ADD CONSTRAINT "devices_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "auth_activities" ADD CONSTRAINT "auth_activities_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

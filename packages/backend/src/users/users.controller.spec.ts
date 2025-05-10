@@ -6,11 +6,11 @@ import { UnauthorizedException } from '@nestjs/common';
 import { User } from '../generated/prisma';
 import { RequestWithUser } from './interfaces/user-request.interface';
 import { AuthCookieService } from '../auth/services/auth-cookie.service';
-import { DeviceService } from '../auth/services/device.service';
+import { DeviceService } from '../auth/services/device/device.service';
 import {
   ActivityLogService,
   AuthEventType,
-} from '../auth/services/activity-log.service';
+} from '../auth/services/activity-log/activity-log.service';
 import { AuthService } from '../auth/auth.service';
 import { Response } from 'express';
 

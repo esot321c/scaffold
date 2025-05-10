@@ -29,7 +29,6 @@ export class AdminLogsController {
     @Query('event') event?: string,
     @Query('search') search?: string,
   ) {
-    // packages/backend/src/admin/logs/logs.controller.ts (continued)
     const pageNum = parseInt(page, 10);
     const limitNum = Math.min(parseInt(limit, 10), 100); // Cap at 100 records per page
     const skip = (pageNum - 1) * limitNum;

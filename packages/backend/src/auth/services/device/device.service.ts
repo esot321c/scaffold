@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { DeviceInfoDto } from '../dto/mobile-auth.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { DeviceInfoDto } from '../../dto/mobile-auth.dto';
 
 @Injectable()
 export class DeviceService {

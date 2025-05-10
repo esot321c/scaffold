@@ -1,21 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
-import { AuthService } from '../auth.service';
 import { AppConfig } from 'src/config/configuration';
 import { Request } from 'express';
-import {
-  ActivityLogService,
-  AuthEventType,
-} from '../services/activity-log.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { AuthService } from '../services/auth/auth.service';
+import { LoggingService } from '@/logging/services/logging/logging.service';
+import { AuthEventType } from '@/logging/interfaces/event-types';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+  private readonly logger = new Logger(GoogleStrategy.name);
+
   constructor(
     private configService: AppConfig,
     private authService: AuthService,
-    private activityLogService: ActivityLogService,
+    private readonly loggingService: LoggingService,
     private prisma: PrismaService,
   ) {
     super({
@@ -71,32 +71,33 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
           });
 
           if (user) {
-            await this.activityLogService.logActivity(
-              user.id,
-              AuthEventType.FAILED_LOGIN,
-              false,
-              {
-                ipAddress: request.ip,
-                userAgent: request.headers['user-agent'],
-                details: {
-                  provider: 'google',
-                  error: errorDetails,
-                  profileData: {
-                    id: profile.id,
-                    email: profile.emails[0].value,
-                    name: profile.displayName,
-                  },
+            await this.loggingService.logSecurityEvent({
+              level: 'warn', // Failed logins should be warnings
+              userId: user.id,
+              event: AuthEventType.FAILED_LOGIN,
+              success: false,
+              ipAddress: request.ip,
+              userAgent: request.headers['user-agent'],
+              requestId: request.headers['x-request-id'] as string,
+              details: {
+                provider: 'google',
+                error: errorDetails,
+                profileData: {
+                  id: profile.id,
+                  email: profile.emails[0].value,
+                  name: profile.displayName,
                 },
               },
-            );
+            });
           } else {
             // Log attempt for non-existent user
-            console.warn(
-              `Failed login attempt for non-existent user: ${profile.emails[0].value}`,
+            this.logger.warn(
+              'Failed login attempt for non-existent user:',
+              profile.emails[0].value,
             );
           }
         } catch (dbError) {
-          console.error('Error during failed login logging:', dbError);
+          this.logger.error('Error during failed login logging:', dbError);
         }
       }
 

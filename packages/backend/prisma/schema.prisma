@@ -70,23 +70,6 @@ model Device {
   @@map("devices")
 }
 
-model AuthActivity {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event       String   // login, logout, token_refresh, etc.
-  ipAddress   String?  @map("ip_address")
-  userAgent   String?  @map("user_agent")
-  deviceId    String?  @map("device_id")
-  sessionId   String?  @map("session_id")
-  successful  Boolean  @default(true)
-  details     Json?
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@index([userId, createdAt])
-  @@map("auth_activities")
-}
-
 enum UserRole {
   USER
   ADMIN
@@ -108,7 +91,6 @@ model User {
   accounts        Account[]
   sessions        Session[]
   devices         Device[]
-  authActivities  AuthActivity[]
 
   @@map("users")
 }

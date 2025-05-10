@@ -1,13 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
-import { AuthCookieService } from './services/auth-cookie.service';
-import { AuthProvider, DeviceInfoDto } from './dto/mobile-auth.dto';
-import {
-  ActivityLogService,
-  AuthEventType,
-} from './services/activity-log.service';
+import { AuthProvider, DeviceInfoDto } from '../../dto/mobile-auth.dto';
 import * as crypto from 'crypto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { LoggingService } from '@/logging/services/logging/logging.service';
+import { AuthEventType } from '@/logging/interfaces/event-types';
 
 interface OAuthUserData {
   provider: string;
@@ -26,8 +23,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private cookieService: AuthCookieService,
-    private activityLogService: ActivityLogService,
+    private loggingService: LoggingService,
   ) {}
 
   async handleOAuthLogin(
@@ -70,15 +66,20 @@ export class AuthService {
     const accessToken = this.generateJwtToken(user, session.id);
 
     // Log successful login
-    await this.activityLogService.logActivity(
-      user.id,
-      AuthEventType.LOGIN,
-      true,
-      {
-        ipAddress,
-        userAgent,
+    await this.loggingService.logSecurityEvent({
+      level: 'info',
+      userId: user.id,
+      event: AuthEventType.LOGIN,
+      success: true,
+      ipAddress,
+      userAgent,
+      sessionId: session.id,
+      // No requestId since we don't have req object
+      details: {
+        loginMethod: 'oauth',
+        provider: userData.provider,
       },
-    );
+    });
 
     return {
       id: user.id,
@@ -101,16 +102,22 @@ export class AuthService {
     const accessToken = this.generateJwtToken(user, session.id);
 
     // Log successful mobile login
-    await this.activityLogService.logActivity(
-      user.id,
-      AuthEventType.LOGIN,
-      true,
-      {
+    await this.loggingService.logSecurityEvent({
+      level: 'info',
+      userId: user.id,
+      event: AuthEventType.LOGIN,
+      success: true,
+      ipAddress,
+      userAgent,
+      sessionId: session.id,
+      // No requestId since we don't have req object
+      details: {
         ipAddress,
         userAgent,
-        details: { mobileLogin: true },
+        loginMethod: 'token', // or mobile?
+        provider: userData.provider,
       },
-    );
+    });
 
     return {
       user: {
@@ -189,20 +196,19 @@ export class AuthService {
     const accessToken = this.generateJwtToken(session.user, sessionId);
 
     // Log token refresh with the information we have
-    await this.activityLogService.logActivity(
+    await this.loggingService.logSecurityEvent({
+      level: 'info',
       userId,
-      AuthEventType.TOKEN_REFRESH,
-      true,
-      {
-        ipAddress,
-        userAgent,
-        details: {
-          sessionId,
-          tokenType: 'access',
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        },
+      event: AuthEventType.TOKEN_REFRESH,
+      success: true,
+      ipAddress,
+      userAgent,
+      sessionId,
+      details: {
+        tokenType: 'access',
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
-    );
+    });
 
     return {
       user: session.user,
@@ -355,17 +361,16 @@ export class AuthService {
 
     // Log session invalidation if we know the user
     if (session?.userId) {
-      await this.activityLogService.logActivity(
-        session.userId,
-        AuthEventType.SESSION_TERMINATED,
-        true,
-        {
-          sessionId,
-          details: {
-            terminationType: 'explicit_invalidation',
-          },
+      await this.loggingService.logSecurityEvent({
+        level: 'info',
+        userId: session.userId,
+        event: AuthEventType.SESSION_TERMINATED,
+        success: true,
+        sessionId,
+        details: {
+          terminationType: 'explicit_invalidation',
         },
-      );
+      });
     }
 
     return { success: true };
@@ -380,17 +385,16 @@ export class AuthService {
       data: { isValid: false },
     });
 
-    await this.activityLogService.logActivity(
+    await this.loggingService.logSecurityEvent({
+      level: 'info',
       userId,
-      AuthEventType.ALL_SESSIONS_TERMINATED,
-      true,
-      {
-        details: {
-          exceptSessionId: currentSessionId ?? null,
-          reason: 'user_initiated',
-        },
+      event: AuthEventType.ALL_SESSIONS_TERMINATED,
+      success: true,
+      details: {
+        exceptSessionId: currentSessionId ?? null,
+        reason: 'user_initiated',
       },
-    );
+    });
 
     return { success: true };
   }
