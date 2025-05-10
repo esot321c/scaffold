@@ -1,15 +1,20 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../guards/admin/admin.guard';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { LoggingService } from '@/logging/services/logging/logging.service';
+import { AuthEventType } from '@/logging/interfaces/event-types';
 
 @ApiTags('admin')
 @Controller('admin/stats')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')
 export class StatsController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private loggingService: LoggingService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get admin dashboard statistics' })
@@ -18,49 +23,41 @@ export class StatsController {
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
     // Run all queries in parallel for better performance
-    const [totalUsers, activeSessions, activeUsers24h, failedLogins24h] =
-      await Promise.all([
-        // Total users count
-        this.prisma.user.count(),
+    const [totalUsers, activeSessions] = await Promise.all([
+      // Total users count
+      this.prisma.user.count(),
 
-        // Active sessions count
-        this.prisma.session.count({
-          where: {
-            isValid: true,
-            expiresAt: {
-              gt: new Date(),
-            },
+      // Active sessions count
+      this.prisma.session.count({
+        where: {
+          isValid: true,
+          expiresAt: {
+            gt: new Date(),
           },
-        }),
+        },
+      }),
+    ]);
 
-        // Active users in last 24 hours
-        this.prisma.authActivity
-          .findMany({
-            where: {
-              event: 'login',
-              successful: true,
-              createdAt: {
-                gte: oneDayAgo,
-              },
-            },
-            select: {
-              userId: true,
-            },
-            distinct: ['userId'],
-          })
-          .then((users) => users.length),
+    // Get login logs
+    const loginLogs = await this.loggingService.getSecurityLogs({
+      event: AuthEventType.LOGIN,
+      success: true,
+      fromDate: oneDayAgo,
+    });
 
-        // Failed logins in last 24 hours
-        this.prisma.authActivity.count({
-          where: {
-            event: 'failed_login',
-            successful: false,
-            createdAt: {
-              gte: oneDayAgo,
-            },
-          },
-        }),
-      ]);
+    // Count unique users that logged in
+    const uniqueUserIds = new Set();
+    loginLogs.data.forEach((log) => uniqueUserIds.add(log.userId));
+    const activeUsers24h = uniqueUserIds.size;
+
+    // Get failed login counts
+    const failedLoginLogs = await this.loggingService.getSecurityLogs({
+      event: AuthEventType.FAILED_LOGIN,
+      success: false,
+      fromDate: oneDayAgo,
+    });
+
+    const failedLogins24h = failedLoginLogs.data.length;
 
     return {
       totalUsers,

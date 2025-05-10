@@ -1,5 +1,5 @@
+import { ApiLog } from '@/logging/interfaces/log.types';
 import { Schema } from 'mongoose';
-import { ApiLog } from '../interfaces/log.types';
 
 export const ApiLogSchema = new Schema<ApiLog>(
   {

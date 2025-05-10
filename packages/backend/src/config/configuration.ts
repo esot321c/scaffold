@@ -20,6 +20,14 @@ export class AppConfig {
     };
   }
 
+  get mongoConfig() {
+    return {
+      uri: this.configService.get('MONGODB_URI', { infer: true }),
+      user: this.configService.get('MONGODB_USER', { infer: true }),
+      password: this.configService.get('MONGODB_PASSWORD', { infer: true }),
+    };
+  }
+
   get baseUrl() {
     return {
       url: this.configService.get('BASE_URL', { infer: true }),
@@ -47,5 +55,22 @@ export class AppConfig {
 
   get isProduction() {
     return this.configService.get('NODE_ENV', { infer: true }) === 'production';
+  }
+
+  get logging() {
+    return {
+      level: this.configService.get('LOG_LEVEL', { infer: true }),
+      directory: this.configService.get('LOG_DIR', { infer: true }),
+      mongoEnabled: this.configService.get('LOGGING_MONGO_ENABLED', {
+        infer: true,
+      }),
+      fileEnabled: this.configService.get('LOGGING_FILE_ENABLED', {
+        infer: true,
+      }),
+      defaultRetentionDays: this.configService.get(
+        'LOGGING_DEFAULT_RETENTION_DAYS',
+        { infer: true },
+      ),
+    };
   }
 }

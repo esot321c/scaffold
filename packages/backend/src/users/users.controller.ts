@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   UseGuards,
-  Req,
   UnauthorizedException,
   Delete,
   Param,
@@ -10,6 +9,10 @@ import {
   Post,
   Body,
   Patch,
+  Req,
+  DefaultValuePipe,
+  ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
@@ -19,14 +22,13 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserWithSession } from '@scaffold/types';
 import { RequestWithUser } from './interfaces/user-request.interface';
-import { AuthCookieService } from '../auth/services/auth-cookie.service';
 import { DeviceService } from '../auth/services/device/device.service';
-import {
-  ActivityLogService,
-  AuthEventType,
-} from '../auth/services/activity-log/activity-log.service';
 import { DeviceInfoDto } from 'src/auth/dto/mobile-auth.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { AuthCookieService } from '@/auth/services/auth-cookie/auth-cookie.service';
+import { AuthEventType } from '@/logging/interfaces/event-types';
+import { LoggingService } from '@/logging/services/logging/logging.service';
+import { Request } from 'express';
 
 @ApiTags('users')
 @Controller('users')
@@ -36,7 +38,7 @@ export class UsersController {
     private prisma: PrismaService,
     private authCookieService: AuthCookieService,
     private deviceService: DeviceService,
-    private activityLogService: ActivityLogService,
+    private loggingService: LoggingService,
   ) {}
 
   @Get('me')
@@ -106,15 +108,24 @@ export class UsersController {
   async trustDevice(
     @CurrentUser() user: User,
     @Body() data: { deviceId: string },
+    @Req() req: Request,
   ) {
     const device = await this.deviceService.trustDevice(user.id, data.deviceId);
 
-    await this.activityLogService.logActivity(
-      user.id,
-      AuthEventType.DEVICE_TRUSTED,
-      true,
-      { deviceId: data.deviceId },
-    );
+    this.loggingService.logSecurityEvent({
+      level: 'info',
+      userId: user.id,
+      event: AuthEventType.DEVICE_TRUSTED,
+      success: true,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      deviceId: data.deviceId,
+      requestId: req.headers['x-request-id'] as string,
+      details: {
+        deviceId: data.deviceId,
+        trustedAt: new Date(),
+      },
+    });
 
     return device;
   }
@@ -123,7 +134,11 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Remove a device' })
-  async removeDevice(@CurrentUser() user: User, @Param('id') deviceId: string) {
+  async removeDevice(
+    @CurrentUser() user: User,
+    @Param('id') deviceId: string,
+    @Req() req: Request,
+  ) {
     // Check if device belongs to user first
     const device = await this.prisma.device.findUnique({
       where: {
@@ -140,12 +155,20 @@ export class UsersController {
 
     await this.deviceService.removeDevice(user.id, deviceId);
 
-    await this.activityLogService.logActivity(
-      user.id,
-      AuthEventType.DEVICE_REMOVED,
-      true,
-      { deviceId },
-    );
+    this.loggingService.logSecurityEvent({
+      level: 'info',
+      userId: user.id,
+      event: AuthEventType.DEVICE_REMOVED,
+      success: true,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      deviceId: deviceId,
+      requestId: req.headers['x-request-id'] as string,
+      details: {
+        deviceId: deviceId,
+        removedAt: new Date(),
+      },
+    });
 
     return { success: true };
   }
@@ -154,8 +177,29 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Get recent account activity' })
-  async getRecentActivity(@CurrentUser() user: User) {
-    return this.activityLogService.getRecentActivities(user.id);
+  async getRecentActivity(
+    @CurrentUser() user: User,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('type') type?: string,
+    @Query('from') from?: string,
+  ) {
+    // Parse the from date if provided
+    const fromDate = from ? new Date(from) : undefined;
+
+    // Parse event types if provided
+    const includeEvents = type?.split(',').map((t) => t.trim()) as
+      | AuthEventType[]
+      | undefined;
+
+    // Cap the limit to a reasonable number
+    const cappedLimit = Math.min(limit, 100);
+
+    // Get activities with the specified filters
+    return this.loggingService.getRecentActivities(user.id, {
+      limit: cappedLimit,
+      includeEvents,
+      fromDate,
+    });
   }
 
   @Post('register-device')
@@ -165,18 +209,27 @@ export class UsersController {
   async registerDevice(
     @CurrentUser() user: User,
     @Body() deviceInfo: DeviceInfoDto,
+    @Req() req: Request,
   ) {
     const device = await this.deviceService.registerDevice(user.id, deviceInfo);
 
-    await this.activityLogService.logActivity(
-      user.id,
-      AuthEventType.DEVICE_REGISTERED,
-      true,
-      {
+    this.loggingService.logSecurityEvent({
+      level: 'info',
+      userId: user.id,
+      event: AuthEventType.DEVICE_REGISTERED,
+      success: true,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      deviceId: deviceInfo.deviceId,
+      requestId: req.headers['x-request-id'] as string,
+      details: {
         deviceId: deviceInfo.deviceId,
         platform: deviceInfo.platform,
+        osVersion: deviceInfo.osVersion,
+        appVersion: deviceInfo.appVersion,
+        registeredAt: new Date(),
       },
-    );
+    });
 
     return device;
   }
