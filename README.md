@@ -102,6 +102,22 @@ The application will be available at:
 - Backend API: http://localhost:3001
 - API Documentation: http://localhost:3001/api
 
+### Types Package
+
+The `@scaffold/types` package contains shared TypeScript types and enums used by both frontend and backend. When making changes to this package, you need to rebuild it to ensure changes are properly reflected throughout the project:
+
+```bash
+# Rebuild the types package
+pnpm --filter @scaffold/types build
+
+# Or rebuild all packages
+pnpm build
+```
+
+This is particularly important when modifying enums or interfaces that are used for communication between frontend and backend. After rebuilding, TypeScript will detect the updated types across the project.
+
+For CI/CD environments, ensure your build process includes this step to maintain type safety.
+
 ## Deployment Options
 
 Scaffold is designed to be deployment-agnostic. Here are some common deployment options:
