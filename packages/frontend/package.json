@@ -11,11 +11,13 @@
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.7",
+    "@radix-ui/react-checkbox": "^1.3.1",
     "@radix-ui/react-dialog": "^1.1.11",
     "@radix-ui/react-dropdown-menu": "^2.1.12",
     "@radix-ui/react-label": "^2.1.4",
     "@radix-ui/react-select": "^2.2.2",
     "@radix-ui/react-slot": "^1.2.0",
+    "@radix-ui/react-switch": "^1.2.4",
     "@tailwindcss/vite": "^4.1.4",
     "@tanstack/react-query": "^5.74.4",
     "@tanstack/react-router": "^1.114.3",
@@ -32,7 +34,8 @@
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "tw-animate-css": "^1.2.8",
-    "zod": "^3.24.3"
+    "zod": "^3.24.3",
+    "@scaffold/types": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
@@ -46,7 +49,6 @@
     "typescript": "^5.7.2",
     "vite": "^6.1.0",
     "vitest": "^3.0.5",
-    "web-vitals": "^4.2.4",
-    "@scaffold/types": "workspace:*"
+    "web-vitals": "^4.2.4"
   }
 }

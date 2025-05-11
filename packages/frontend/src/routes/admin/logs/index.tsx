@@ -21,30 +21,22 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { Search, Download, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import type { SecurityLog, PaginatedResponse } from '@scaffold/types';
+import { AuthEventType } from '@scaffold/types';
 
 export const Route = createFileRoute('/admin/logs/')({
   component: SecurityLogs,
 });
 
-interface LogEntry {
-  id: string;
-  userId: string;
-  userEmail: string;
-  event: string;
-  ipAddress: string | null;
-  userAgent: string | null;
-  successful: boolean;
-  details: Record<string, any> | null;
-  createdAt: string;
-}
-
 function SecurityLogs() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs, setLogs] = useState<SecurityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [eventType, setEventType] = useState<string>('all');
+  const [eventType, setEventType] = useState<AuthEventType | 'all'>('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
     fetchLogs();
@@ -65,19 +57,22 @@ function SecurityLogs() {
         params.append('search', searchTerm);
       }
 
-      const data = await apiClient.get<{ logs: LogEntry[]; hasMore: boolean }>(
+      const response = await apiClient.get<PaginatedResponse<SecurityLog>>(
         `admin/logs?${params.toString()}`,
       );
 
       if (page === 1) {
-        setLogs(data.logs);
+        setLogs(response.data);
       } else {
-        setLogs((prev) => [...prev, ...data.logs]);
+        setLogs((prevLogs) => [...prevLogs, ...response.data]);
       }
 
-      setHasMore(data.hasMore);
+      // Set pagination info
+      setTotalItems(response.pagination.total);
+      setHasMore(page < response.pagination.pages);
     } catch (error) {
       console.error('Failed to fetch logs:', error);
+      toast.error('Failed to load security logs');
     } finally {
       setLoading(false);
     }
@@ -116,21 +111,22 @@ function SecurityLogs() {
       );
     } catch (error) {
       console.error('Failed to export logs:', error);
+      toast.error('Failed to export logs');
     }
   };
 
   const getEventBadgeColor = (event: string) => {
     switch (event) {
-      case 'login':
+      case AuthEventType.LOGIN:
         return 'bg-green-100 text-green-800';
-      case 'logout':
+      case AuthEventType.LOGOUT:
         return 'bg-blue-100 text-blue-800';
-      case 'failed_login':
-      case 'csrf_failure':
+      case AuthEventType.FAILED_LOGIN:
+      case AuthEventType.CSRF_FAILURE:
         return 'bg-red-100 text-red-800';
-      case 'token_refresh':
+      case AuthEventType.TOKEN_REFRESH:
         return 'bg-purple-100 text-purple-800';
-      case 'session_expired':
+      case AuthEventType.SESSION_EXPIRED:
         return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -141,10 +137,15 @@ function SecurityLogs() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Security Logs</h1>
-        <Button variant="outline" onClick={exportLogs}>
-          <Download className="h-4 w-4 mr-2" />
-          Export
-        </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            {totalItems} logs total
+          </span>
+          <Button variant="outline" onClick={exportLogs}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -167,18 +168,40 @@ function SecurityLogs() {
           )}
         </div>
 
-        <Select value={eventType} onValueChange={setEventType}>
+        <Select
+          value={eventType}
+          onValueChange={(value) =>
+            setEventType(value as AuthEventType | 'all')
+          }
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Event Type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Events</SelectItem>
-            <SelectItem value="login">Login</SelectItem>
-            <SelectItem value="logout">Logout</SelectItem>
-            <SelectItem value="failed_login">Failed Login</SelectItem>
-            <SelectItem value="token_refresh">Token Refresh</SelectItem>
-            <SelectItem value="session_expired">Session Expired</SelectItem>
-            <SelectItem value="csrf_failure">CSRF Failure</SelectItem>
+            <SelectItem value={AuthEventType.LOGIN}>Login</SelectItem>
+            <SelectItem value={AuthEventType.LOGOUT}>Logout</SelectItem>
+            <SelectItem value={AuthEventType.FAILED_LOGIN}>
+              Failed Login
+            </SelectItem>
+            <SelectItem value={AuthEventType.TOKEN_REFRESH}>
+              Token Refresh
+            </SelectItem>
+            <SelectItem value={AuthEventType.SESSION_EXPIRED}>
+              Session Expired
+            </SelectItem>
+            <SelectItem value={AuthEventType.CSRF_FAILURE}>
+              CSRF Failure
+            </SelectItem>
+            <SelectItem value={AuthEventType.DEVICE_TRUSTED}>
+              Device Trusted
+            </SelectItem>
+            <SelectItem value={AuthEventType.DEVICE_REMOVED}>
+              Device Removed
+            </SelectItem>
+            <SelectItem value={AuthEventType.SESSION_TERMINATED}>
+              Session Terminated
+            </SelectItem>
           </SelectContent>
         </Select>
 
@@ -219,11 +242,14 @@ function SecurityLogs() {
               logs.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell className="whitespace-nowrap">
-                    {format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss')}
+                    {format(
+                      new Date(log.timestamp ?? new Date()),
+                      'yyyy-MM-dd HH:mm:ss',
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="font-medium truncate max-w-[180px]">
-                      {log.userEmail}
+                      {log.user?.email ?? 'Unknown User'}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
                       {log.userId}
@@ -235,7 +261,7 @@ function SecurityLogs() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {log.successful ? (
+                    {log.success ? (
                       <div className="flex items-center">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
                         <span className="text-xs">Success</span>
@@ -247,7 +273,7 @@ function SecurityLogs() {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>{log.ipAddress || 'N/A'}</TableCell>
+                  <TableCell>{log.ipAddress ?? 'N/A'}</TableCell>
                   <TableCell>
                     <div className="text-xs max-w-[200px] truncate">
                       {log.details ? JSON.stringify(log.details) : 'No details'}

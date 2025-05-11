@@ -1,4 +1,3 @@
-// packages/frontend/src/routes/admin/users/index.tsx
 import { createFileRoute } from '@tanstack/react-router';
 import { apiClient } from '@/lib/utils/api-client';
 import {
@@ -16,33 +15,33 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, UserCheck, UserX, Shield } from 'lucide-react';
+import {
+  MoreHorizontal,
+  UserCheck,
+  UserX,
+  Shield,
+  RefreshCw,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { AdminUsersResponse } from '@scaffold/types';
 
 export const Route = createFileRoute('/admin/users/')({
   component: UserManagement,
 });
 
-interface AdminUser {
-  id: string;
-  email: string;
-  name: string | null;
-  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
-  createdAt: string;
-  lastLoginAt: string | null;
-  sessionCount: number;
-}
-
 function UserManagement() {
   const queryClient = useQueryClient();
 
   // Query for fetching users
-  const { data: users = [], isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin', 'users'],
-    queryFn: () => apiClient.get<AdminUser[]>('admin/users'),
+    queryFn: () => apiClient.get<AdminUsersResponse>('admin/users'),
   });
+
+  // Extract users array from the response
+  const users = data?.data ?? [];
 
   // Mutation for updating user role
   const updateRoleMutation = useMutation({
@@ -68,11 +67,20 @@ function UserManagement() {
     updateRoleMutation.mutate({ userId, role });
   };
 
+  const handleRefresh = () => {
+    refetch();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">User Management</h1>
-        <Button size="sm">Refresh</Button>
+        <Button size="sm" onClick={handleRefresh} disabled={isLoading}>
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`}
+          />
+          Refresh
+        </Button>
       </div>
 
       <div className="rounded-md border">
@@ -168,6 +176,14 @@ function UserManagement() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Display pagination info */}
+      {data?.pagination && (
+        <div className="text-sm text-muted-foreground">
+          Showing {users.length} of {data.pagination.total} users (Page{' '}
+          {data.pagination.page} of {data.pagination.pages})
+        </div>
+      )}
     </div>
   );
 }
