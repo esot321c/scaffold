@@ -1,4 +1,4 @@
-import { UserRole } from '../../../backend/src/generated/prisma';
+import { UserRole } from '../enums/index.js';
 
 export interface User {
   id: string;
@@ -11,7 +11,7 @@ export interface User {
   website?: string | null;
   createdAt: Date;
   updatedAt: Date;
-  role: UserRole; // from Prisma Enum on backend
+  role: UserRole;
 }
 
 export interface UserWithSession extends User {

@@ -1,4 +1,4 @@
-import { ApiLog } from '@/logging/interfaces/log.types';
+import { ApiLog } from '@scaffold/types';
 import { Schema } from 'mongoose';
 
 export const ApiLogSchema = new Schema<ApiLog>(
@@ -10,7 +10,7 @@ export const ApiLogSchema = new Schema<ApiLog>(
     requestId: { type: String, index: true },
     userId: { type: String, index: true },
     method: String,
-    path: String,
+    path: { type: String, index: true },
     statusCode: Number,
     responseTime: Number,
     ip: String,

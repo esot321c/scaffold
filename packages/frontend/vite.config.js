@@ -1,8 +1,8 @@
-import { defineConfig } from "vite";
-import viteReact from "@vitejs/plugin-react";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
-import { resolve } from "node:path";
-import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from 'vite';
+import viteReact from '@vitejs/plugin-react';
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
+import { resolve } from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -13,15 +13,15 @@ export default defineConfig({
   ],
   test: {
     globals: true,
-    environment: "jsdom",
+    environment: 'jsdom',
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
-      "@/components": resolve(__dirname, "./src/components"),
-      "@/lib": resolve(__dirname, "./src/lib"),
-      "@/styles": resolve(__dirname, "./src/styles"),
-      "@/providers": resolve(__dirname, "./src/providers"),
+      '@': resolve(__dirname, './src'),
+      '@/components': resolve(__dirname, './src/components'),
+      '@/lib': resolve(__dirname, './src/lib'),
+      '@/styles': resolve(__dirname, './src/styles'),
+      '@/providers': resolve(__dirname, './src/providers'),
     },
   },
 });

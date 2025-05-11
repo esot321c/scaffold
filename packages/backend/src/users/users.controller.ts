@@ -20,13 +20,12 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { User } from 'src/generated/prisma';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { UserWithSession } from '@scaffold/types';
+import { AuthEventType, UserRole, UserWithSession } from '@scaffold/types';
 import { RequestWithUser } from './interfaces/user-request.interface';
 import { DeviceService } from '../auth/services/device/device.service';
 import { DeviceInfoDto } from 'src/auth/dto/mobile-auth.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AuthCookieService } from '@/auth/services/auth-cookie/auth-cookie.service';
-import { AuthEventType } from '@/logging/interfaces/event-types';
 import { LoggingService } from '@/logging/services/logging/logging.service';
 import { Request } from 'express';
 
@@ -71,6 +70,7 @@ export class UsersController {
 
     return {
       ...user,
+      role: user.role as unknown as UserRole, // make sure to update the type if the db enum changes
       session: session,
     };
   }

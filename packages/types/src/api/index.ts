@@ -1,3 +1,5 @@
+import { AuthEventType } from '../enums/index.js';
+
 export interface ApiResponse<T> {
   data: T;
   status: number;
@@ -18,4 +20,84 @@ export interface ApiStatus {
   status: string;
   timestamp: string;
   version: string;
+}
+
+export interface LogRetentionSettings {
+  securityLogDays: number;
+  apiLogDays: number;
+  mongoEnabled: boolean;
+  fileEnabled: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+  createdAt: string; // ISO string representation of date
+  lastLoginAt: string | null; // ISO string or null
+  sessionCount: number;
+}
+
+export interface AdminUsersResponse extends PaginatedResponse<AdminUser> {}
+
+export interface BaseLog {
+  timestamp?: Date;
+  level: string;
+  requestId?: string;
+}
+
+export interface ApiLog extends BaseLog {
+  message: string;
+  context: string;
+  userId?: string;
+  method?: string;
+  path?: string;
+  statusCode?: number;
+  responseTime?: number;
+  ip?: string;
+  userAgent?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface UserBasic {
+  id: string;
+  email: string;
+  name?: string | null;
+}
+
+export interface SecurityLog extends BaseLog {
+  id?: string;
+  userId: string;
+  user?: UserBasic;
+  event: AuthEventType;
+  success: boolean;
+  ipAddress?: string;
+  userAgent?: string;
+  deviceId?: string;
+  sessionId?: string;
+  details?: Record<string, any>;
+}
+
+export interface LogFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  fromDate?: Date;
+  toDate?: Date;
+}
+
+export interface SecurityLogFilter extends LogFilter {
+  userId?: string;
+  userIds?: string[];
+  event?: AuthEventType;
+  success?: boolean;
+  includeDetails?: boolean;
+}
+
+export interface ApiLogFilter extends LogFilter {
+  path?: string;
+  method?: string;
+  statusCode?: number;
+  userId?: string;
 }

@@ -25,6 +25,9 @@
     "prettier": "^3.5.3",
     "typescript-eslint": "^8.20.0"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "pnpm": {
     "onlyBuiltDependencies": [
       "@nestjs/core",

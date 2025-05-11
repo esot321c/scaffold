@@ -1,6 +1,8 @@
 # Node modules - this pattern will catch all node_modules directories anywhere in the repo
 **/node_modules/
 
+**/logs/
+
 # Environment variables - pattern for all .env files anywhere in the repo
 **/.env
 **/.env.local

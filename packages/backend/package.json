@@ -47,13 +47,13 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "@scaffold/types": "workspace:*"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
-    "@scaffold/types": "workspace:*",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.7",
     "@types/cookie-parser": "^1.4.8",

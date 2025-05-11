@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { LoggingService } from '../services/logging/logging.service';
-import { ApiLog } from '../interfaces/log.types';
+import { ApiLog } from '@scaffold/types';
 
 @Injectable()
 export class ApiLoggingMiddleware implements NestMiddleware {

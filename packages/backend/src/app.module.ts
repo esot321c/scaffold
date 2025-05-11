@@ -19,6 +19,7 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { LoggingModule } from './logging/logging.module';
 import { ApiLoggingMiddleware } from './logging/middleware/api-logging.middleware';
 import { MongoDBModule } from './mongodb/mongodb.module';
+import { LogsController } from './admin/controllers/logs/logs.controller';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { MongoDBModule } from './mongodb/mongodb.module';
     UsersModule,
     AdminModule,
   ],
-  controllers: [AppController, UsersController],
+  controllers: [AppController, UsersController, LogsController],
   providers: [AppService],
 })
 export class AppModule implements NestModule {

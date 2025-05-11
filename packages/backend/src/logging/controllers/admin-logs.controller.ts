@@ -16,14 +16,13 @@ import {
   ApiOperation,
   ApiQuery,
 } from '@nestjs/swagger';
-
-import {
-  PaginatedResponse,
-  ApiLog,
-  SecurityLog,
-} from '../interfaces/log.types';
 import { LoggingService } from '../services/logging/logging.service';
-import { AuthEventType } from '../interfaces/event-types';
+import {
+  ApiLog,
+  AuthEventType,
+  PaginatedResponse,
+  SecurityLog,
+} from '@scaffold/types';
 
 @ApiTags('admin/logging')
 @Controller('admin/logging')

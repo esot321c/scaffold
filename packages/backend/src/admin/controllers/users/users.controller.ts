@@ -10,12 +10,13 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../guards/admin/admin.guard';
-import { PrismaService } from '../../prisma/prisma.service';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { UserRole } from '../../generated/prisma';
 import { LoggingService } from '@/logging/services/logging/logging.service';
+import { AdminUser, PaginatedResponse } from '@scaffold/types';
+import { AdminGuard } from '@/admin/guards/admin/admin.guard';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { UserRole } from '@/generated/prisma';
+import { PrismaService } from '@/prisma/prisma.service';
 
 @ApiTags('admin')
 @Controller('admin/users')
@@ -32,7 +33,7 @@ export class AdminUsersController {
   async getAllUsers(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
-  ) {
+  ): Promise<PaginatedResponse<AdminUser>> {
     const skip = (page - 1) * limit;
 
     // Get total count for pagination
@@ -72,20 +73,22 @@ export class AdminUsersController {
     // Get last login for each user using the optimized method
     const lastLoginMap = await this.loggingService.getLastLoginByUsers(userIds);
 
-    // Transform the data into the expected format
-    const formattedUsers = users.map((user) => ({
+    // Transform the data into the expected format with ISO string dates
+    const formattedUsers: AdminUser[] = users.map((user) => ({
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
-      createdAt: user.createdAt,
-      lastLoginAt: lastLoginMap.get(user.id) || null,
+      role: user.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN', // Cast to shared type enum
+      createdAt: user.createdAt.toISOString(), // Convert Date to ISO string
+      lastLoginAt: lastLoginMap.get(user.id)
+        ? lastLoginMap.get(user.id)!.toISOString()
+        : null,
       sessionCount: user._count.sessions,
     }));
 
-    // Return with pagination info
+    // Return with pagination info using the shared type
     return {
-      users: formattedUsers,
+      data: formattedUsers,
       pagination: {
         total: totalUsers,
         page,
