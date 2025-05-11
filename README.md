@@ -4,6 +4,10 @@
 
 Scaffold is a production-ready, authentication-first foundation for building modern web applications. It combines the power of NestJS on the backend with Tanstack Router and shadcn/ui on the frontend to provide a complete, type-safe development experience.
 
+## Version 0.10.0
+
+This release adds a comprehensive logging system with MongoDB support, an enhanced admin dashboard, and improved security monitoring capabilities.
+
 ## Architecture Decisions
 
 - **Monorepo Structure**: A monorepo approach was chosen to enable sharing TypeScript types between frontend and backend, ensuring complete type safety across the application boundary. This could be broken into separate repos, and the types package could be published as an npm package or hosted in a private package registry (like GitHub Packages, Azure Artifacts, or Nexus Repository) if needed. The monorepo approach simplifies development workflow and ensures types stay in sync during rapid development, while still allowing for future separation if organizational needs require it.
@@ -11,6 +15,7 @@ Scaffold is a production-ready, authentication-first foundation for building mod
 - **NestJS for Backend**: Provides a structured, modular architecture with dependency injection, making the codebase maintainable and testable. The patterns established here could be implemented in other backend languages like C#/.NET, Rust, or Go if team expertise or performance requirements change in the future.
 - **PostgreSQL with Prisma**: Offers type-safe database access with migrations, ensuring data integrity and developer productivity.
 - **Redis for Caching**: The system includes Redis infrastructure for performance optimization, allowing efficient caching of external API responses, expensive database queries, or other frequently accessed data. This caching layer can significantly reduce latency and minimize costs when integrating with rate-limited or pay-per-call third-party services.
+- **Advanced Logging System**: A flexible, configurable logging infrastructure with MongoDB support for structured logs, retention policies, and comprehensive security event tracking. This system provides visibility into user activity, security events, and API performance while maintaining appropriate data retention policies.
 - **Session-Based Authentication**: We implemented a hybrid JWT+session approach for auth, providing the flexibility of JWTs while maintaining the security benefits of server-side sessions with explicit invalidation capability.
 - **Comprehensive Security Logging**: Security events are systematically logged and available both to users (for their own activity) and administrators, improving transparency and aiding in security incident response.
 - **CSRF Protection**: All non-GET endpoints are protected by CSRF tokens to prevent cross-site request forgery attacks, with a cookie-based implementation. This is enforced through a global middleware that protects all routes except those explicitly excluded (such as OAuth callbacks), ensuring consistent security across the application.
@@ -25,6 +30,7 @@ Scaffold is a production-ready, authentication-first foundation for building mod
 - **Security First**: CSRF protection, activity logging, session management
 - **Type Safety**: Shared TypeScript types between frontend and backend
 - **Admin Dashboard**: Built-in admin controls and security monitoring
+- **Advanced Logging**: Configurable logging with MongoDB integration for structured logs and retention policies
 - **Modern Stack**: NestJS, Tanstack Router, Prisma, shadcn/ui, Tailwind CSS
 
 ## Quick Start
@@ -38,7 +44,7 @@ Scaffold is a production-ready, authentication-first foundation for building mod
 
 ```bash
 # Clone the repository
-git clone https://github.com/esot321c/scaffold
+git clone https://github.com/yourusername/scaffold
 cd scaffold
 
 # Install dependencies
@@ -51,13 +57,16 @@ cp packages/frontend/.env.example packages/frontend/.env
 
 ### Environment Configuration
 
-1. **Generate secure passwords for Redis and Postgres**:
+1. **Generate secure passwords for Redis, Postgres, and MongoDB**:
 
 ```bash
 # Generate Redis password
 openssl rand -hex 16
 
 # Generate Postgres password
+openssl rand -hex 16
+
+# Generate MongoDB password (optional)
 openssl rand -hex 16
 
 # Generate JWT Secret
@@ -77,7 +86,7 @@ openssl rand -hex 32
 ### Start Development Environment
 
 ```bash
-# Start Postgres and Redis
+# Start Postgres, Redis, and MongoDB
 docker-compose up -d
 
 # Run database migrations
@@ -92,6 +101,72 @@ The application will be available at:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:3001
 - API Documentation: http://localhost:3001/api
+
+## Deployment Options
+
+Scaffold is designed to be deployment-agnostic. Here are some common deployment options:
+
+### Option 1: Traditional VPS/VM Deployment
+
+1. Clone the repository on your server
+2. Run `pnpm install` and `pnpm build`
+3. Set up PostgreSQL, Redis, and MongoDB (optional)
+4. Configure environment variables
+5. Run `pnpm start:prod`
+
+### Option 2: Container-based Deployment
+
+1. Use the example Dockerfile: `cp Dockerfile.example Dockerfile`
+2. Build the images:
+   - `docker build --target backend -t scaffold-backend .`
+   - `docker build --target frontend -t scaffold-frontend .`
+3. Deploy PostgreSQL, Redis, and MongoDB (optional) using docker-compose or as managed services
+4. Run with docker-compose or Kubernetes
+
+### Option 3: Platform as a Service (PaaS)
+
+#### Railway
+
+1. Connect your repository to Railway
+2. Add PostgreSQL, Redis, and MongoDB (optional) services
+3. Configure environment variables
+4. Deploy both backend and frontend services
+
+#### Render
+
+1. Create a new Web Service pointing to your repository
+2. Set the build command: `pnpm install && pnpm build`
+3. Set the start command: `cd packages/backend && node dist/main.js`
+4. Add PostgreSQL, Redis, and MongoDB (optional) services
+
+#### Vercel (Frontend) + Heroku (Backend)
+
+1. Configure Vercel for the frontend
+2. Deploy the backend to Heroku
+3. Set up Add-ons for PostgreSQL and Redis on Heroku
+4. Connect to a MongoDB Atlas instance if needed
+
+### Required Environment Variables
+
+See `.env.example` files in each package for required environment variables. MongoDB configuration is optional; if not provided, the system will fall back to file-based logging only.
+
+## MongoDB Configuration (Optional)
+
+MongoDB is used for structured logging and provides advanced query capabilities, configurable retention periods, and better performance for high-volume logging. If MongoDB is not configured, the system will automatically fall back to file-based logging.
+
+To enable MongoDB:
+
+1. Add MongoDB connection details to your .env file:
+
+```
+MONGODB_URI=mongodb://localhost:27017/logging
+MONGODB_USER=your_username  # Optional
+MONGODB_PASSWORD=your_password  # Optional
+```
+
+2. Configure logging retention policies through the Admin UI under System Configuration > Logging Settings.
+
+3. Monitor logs through the Admin UI under Security Logs.
 
 ## Error Handling Strategy
 
@@ -127,25 +202,15 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - Type-safe communication between frontend and backend
 - API Standardization with consistent error handling
 
+### Added in v0.10.0 (✅ Complete)
+
+- Advanced logging system with MongoDB integration
+- Configurable log retention policies
+- Security event monitoring dashboard
+- Advanced filtering and export capabilities for logs
+- User activity tracking and visualization
+
 ### Required for v1.0
-
-#### API Standardization
-
-- [x] Replace all direct fetch calls with apiClient utility
-- [x] Implement consistent error response handling
-- [x] Add request/response interceptors for common operations
-
-#### Error Handling
-
-- [x] Create global exception filter for standardized API responses
-- [x] Implement proper validation error formatting
-- [x] Add request ID tracking for error correlation
-
-#### Logging
-
-- [ ] Replace console.log calls with NestJS Logger
-- [ ] Implement structured logging format
-- [ ] Configure appropriate log levels for different environments
 
 #### Testing
 
@@ -155,9 +220,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 #### Documentation
 
-- [ ] Complete API documentation with Swagger
+- [x] Complete API documentation with Swagger
 - [ ] Add detailed setup and configuration guides
-- [ ] Document security features and best practices
+- [x] Document security features and best practices
 - [ ] Create example implementations and customization guides
 
 #### CI/CD & DevOps
@@ -173,20 +238,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [ ] Complete security audit
 - [ ] Enable database query optimization
 
-#### Device Management
-
-- [ ] Complete device management UI for user profiles
-- [ ] Implement proper device recognition and fingerprinting
-- [ ] Add device approval/verification workflow
-- [ ] Enhance device-related logging and notifications
-- [ ] Build suspicious login detection based on device patterns
-- [ ] Create consistent device naming and identification
-
 #### Configuration
 
-- [ ] Validate all required environment variables on startup
-- [ ] Document configuration options
-- [ ] Provide sensible defaults where possible
+- [x] Validate all required environment variables on startup
+- [x] Document configuration options
+- [x] Provide sensible defaults where possible
 
 ### Future Enhancements (v1.x)
 
@@ -198,4 +254,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - Self-hosted option documentation
 - Internationalization (i18n) support for multilingual deployments
 - Advanced metrics and telemetry for production monitoring
-- Two-factor authentication options (currently we assume the OAuth providers handle these)

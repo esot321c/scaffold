@@ -5,6 +5,36 @@ All notable changes to the Scaffold project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2025-05-11
+
+### Added
+
+- Advanced logging system with MongoDB integration
+- Configurable log retention policies through Admin UI
+- Security event monitoring dashboard with filtering capabilities
+- Log export functionality for compliance and auditing
+- User activity timeline for enhanced security visibility
+- Admin interface for log management and configuration
+- TTL indexes for automatic log rotation based on retention policies
+- Optimized MongoDB queries for log retrieval and analysis
+- Fallback to file-based logging when MongoDB is unavailable
+- Real-time security event tracking and visualization
+
+### Changed
+
+- Restructured logging architecture for better performance
+- Enhanced admin dashboard with security-focused views
+- Improved session management UI with clearer device information
+- Updated environment configuration to support optional MongoDB
+- Enhanced Docker Compose setup with MongoDB container
+
+### Fixed
+
+- Session tracking inconsistencies in security logs
+- Missing context in API request logs
+- Inefficient log storage and retrieval mechanisms
+- Lack of configurable retention policies for compliance needs
+
 ## [0.9.0] - 2025-05-03
 
 ### Added
