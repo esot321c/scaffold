@@ -129,7 +129,82 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  h1 {
+    @apply mb-2 text-2xl sm:text-4xl font-bold;
+  }
+
+  h2 {
+    @apply mb-2 text-xl sm:text-2xl font-bold;
+  }
+
+  h3 {
+    @apply mb-2 text-lg sm:text-xl font-bold;
+  }
+
+  h4 {
+    @apply mb-2 text-base sm:text-lg font-bold;
+  }
+
+  h5 {
+    @apply mb-1 text-base font-bold;
+  }
+
+  h6 {
+    @apply mb-1 text-base font-semibold;
+  }
+
+  p {
+    @apply mb-2;
+  }
+
+  /* Blockquote styles */
+  blockquote {
+    @apply pl-4 border-l-4 border-muted-foreground italic my-4;
+  }
+
+  /* Code styles */
+  code {
+    @apply px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-sm font-mono;
+  }
+  pre {
+    @apply p-4 rounded-lg bg-muted overflow-x-auto my-4;
+  }
+  pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
+
+  /* Form element base styles */
+  input,
+  textarea,
+  select {
+    @apply px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring;
+  }
+
+  /* Horizontal rule */
+  hr {
+    @apply my-6 border-t border-border;
+  }
+
+  .prose section {
+    @apply mb-6;
+  }
+
+  .prose ul,
+  .prose ol {
+    @apply mb-4 ml-6;
+  }
+  .prose ul {
+    @apply list-disc;
+  }
+  .prose ol {
+    @apply list-decimal;
+  }
+  .prose li {
+    @apply mb-1;
   }
 }

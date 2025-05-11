@@ -239,8 +239,8 @@ function SecurityLogs() {
                 </TableCell>
               </TableRow>
             ) : (
-              logs.map((log) => (
-                <TableRow key={log.id}>
+              logs.map((log, i) => (
+                <TableRow key={`${log.id}-${i}`}>
                   <TableCell className="whitespace-nowrap">
                     {format(
                       new Date(log.timestamp ?? new Date()),

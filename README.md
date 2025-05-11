@@ -238,7 +238,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 #### Admin Notification System
 
-- [ ] Implement real-time security alert notifications for admins
+- [ ] Implement real-time security alert notifications for admins, using a queue-based approach to avoid impacting request performance
 - [ ] Create configurable notification thresholds (login failures, suspicious activity)
 - [ ] Add email notification capabilities for critical security events
 - [ ] Develop notification preferences management UI

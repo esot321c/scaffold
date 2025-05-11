@@ -18,6 +18,8 @@
     "@radix-ui/react-select": "^2.2.2",
     "@radix-ui/react-slot": "^1.2.0",
     "@radix-ui/react-switch": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.11",
+    "@scaffold/types": "workspace:*",
     "@tailwindcss/vite": "^4.1.4",
     "@tanstack/react-query": "^5.74.4",
     "@tanstack/react-router": "^1.114.3",
@@ -34,8 +36,7 @@
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "tw-animate-css": "^1.2.8",
-    "zod": "^3.24.3",
-    "@scaffold/types": "workspace:*"
+    "zod": "^3.24.3"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
