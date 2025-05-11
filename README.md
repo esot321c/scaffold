@@ -4,9 +4,9 @@
 
 Scaffold is a production-ready, authentication-first foundation for building modern web applications. It combines the power of NestJS on the backend with Tanstack Router and shadcn/ui on the frontend to provide a complete, type-safe development experience.
 
-## Version 0.10.0
+## Version 0.11.0
 
-This release adds a comprehensive logging system with MongoDB support, an enhanced admin dashboard, and improved security monitoring capabilities.
+This release adds comprehensive device management capabilities, allowing users to view, trust, and remove devices that have accessed their account. It also includes legal document templates and improved security features.
 
 ## Architecture Decisions
 
@@ -209,32 +209,30 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Core Functionality (✅ Complete)
 
-- Authentication system with Google OAuth
+**Authentication & Security**
+
+- Authentication system with Google OAuth integration
 - Session management with JWT and refresh tokens
 - CSRF protection for all endpoints
-- Comprehensive activity and security logging
+- Device management with trust status and removal capabilities
+- Privacy Policy and Terms of Service templates
+
+**Administration & Monitoring**
+
 - Admin portal with user management
-- Type-safe communication between frontend and backend
-- API Standardization with consistent error handling
-
-### Added in v0.10.0 (✅ Complete)
-
 - Advanced logging system with MongoDB integration
 - Configurable log retention policies
-- Security event monitoring dashboard
-- Advanced filtering and export capabilities for logs
+- Security event monitoring dashboard with filtering and export
 - User activity tracking and visualization
 
+**Developer Experience**
+
+- Type-safe communication between frontend and backend
+- API standardization with consistent error handling
+- Shared TypeScript types between packages
+- Responsive UI components with shadcn/ui and Tailwind
+
 ### Required for v1.0
-
-#### Device Management
-
-- [ ] Complete device management UI for user profiles
-- [ ] Implement proper device recognition and fingerprinting
-- [ ] Add device approval/verification workflow
-- [ ] Enhance device-related logging and notifications
-- [ ] Build suspicious login detection based on device patterns
-- [ ] Create consistent device naming and identification
 
 #### Admin Notification System
 
@@ -255,9 +253,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 #### Documentation
 
-- [x] Complete API documentation with Swagger
+- [ ] Complete API documentation with Swagger
 - [ ] Add detailed setup and configuration guides
-- [x] Document security features and best practices
+- [ ] Document security features and best practices
 - [ ] Create example implementations and customization guides
 
 #### CI/CD & DevOps
@@ -286,3 +284,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - User roles and permissions system
 - Enhanced mobile support
 - Internationalization (i18n) support for multilingual deployments
+- Advanced device fingerprinting for better recognition
+- Suspicious login detection based on device patterns
+- Customizable device naming for users
+- Device-based access control policies
+- Geolocation-based device security rules

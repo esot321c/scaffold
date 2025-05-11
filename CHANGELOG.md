@@ -5,6 +5,26 @@ All notable changes to the Scaffold project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2025-05-11
+
+### Added
+
+- Complete device management UI for user profiles
+- Device visualization with platform detection
+- Device trust status management
+- Current device identification and highlighting
+- Device removal functionality
+- Privacy Policy template with standard legal sections
+- Terms of Service template with common legal clauses
+- Legal pages UI with tab-based navigation
+- Footer links to legal documents
+
+### Changed
+
+- Enhanced security section in user profile with device management
+- Improved device recognition logic in backend
+- Updated security logging for device-related actions
+
 ## [0.10.0] - 2025-05-11
 
 ### Added
