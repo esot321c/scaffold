@@ -1,4 +1,4 @@
-import { AuthEventType } from '@/logging/interfaces/event-types';
+import { AuthEventType } from '@scaffold/types';
 import { LoggingService } from '@/logging/services/logging/logging.service';
 import { Injectable, NestMiddleware, ForbiddenException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';

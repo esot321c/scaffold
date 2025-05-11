@@ -1,10 +1,10 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../guards/admin/admin.guard';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { LoggingService } from '@/logging/services/logging/logging.service';
-import { AuthEventType } from '@/logging/interfaces/event-types';
+import { AdminGuard } from '@/admin/guards/admin/admin.guard';
+import { AuthEventType } from '@scaffold/types';
 
 @ApiTags('admin')
 @Controller('admin/stats')

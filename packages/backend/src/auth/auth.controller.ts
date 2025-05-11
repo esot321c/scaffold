@@ -21,7 +21,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OAuthUser } from './interfaces/oauth-user.interface';
 import { MobileAuthDto } from './dto/mobile-auth.dto';
 import { AuthCookieService } from './services/auth-cookie/auth-cookie.service';
-import { AuthEventType } from '@/logging/interfaces/event-types';
+import { AuthEventType } from '@scaffold/types';
 import { LoggingService } from '@/logging/services/logging/logging.service';
 
 @Controller('auth')

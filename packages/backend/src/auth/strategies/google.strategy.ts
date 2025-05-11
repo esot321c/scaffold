@@ -6,7 +6,7 @@ import { Request } from 'express';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuthService } from '../services/auth/auth.service';
 import { LoggingService } from '@/logging/services/logging/logging.service';
-import { AuthEventType } from '@/logging/interfaces/event-types';
+import { AuthEventType } from '@scaffold/types';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {

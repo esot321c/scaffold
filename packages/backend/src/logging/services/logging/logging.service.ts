@@ -4,23 +4,24 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as winston from 'winston';
 import 'winston-daily-rotate-file';
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   ApiLog,
+  ApiLogFilter,
+  AuthEventType,
+  PaginatedResponse,
   SecurityLog,
   SecurityLogFilter,
-  ApiLogFilter,
-} from '@/logging/interfaces/log.types';
-import { PrismaService } from '@/prisma/prisma.service';
-import { PaginatedResponse } from '@scaffold/types';
-import { AuthEventType } from '@/logging/interfaces/event-types';
+} from '@scaffold/types';
 
 @Injectable()
 export class LoggingService implements OnModuleInit {
-  private readonly logger: winston.Logger;
-  private readonly mongoEnabled: boolean;
-  private readonly fileEnabled: boolean;
-  private apiLogRetentionDays: number;
-  private securityLogRetentionDays: number;
+  private logger: winston.Logger;
+  private initialized: boolean = false;
+  private mongoEnabled: boolean = false;
+  private fileEnabled: boolean = true;
+  private apiLogRetentionDays: number = 30;
+  private securityLogRetentionDays: number = 30;
 
   constructor(
     private configService: ConfigService,
@@ -28,61 +29,175 @@ export class LoggingService implements OnModuleInit {
     @InjectModel('ApiLog') private apiLogModel: Model<ApiLog>,
     @InjectModel('SecurityLog') private securityLogModel: Model<SecurityLog>,
   ) {
-    // Determine which transports to enable
-    this.mongoEnabled =
-      this.configService.get<boolean>('LOGGING_MONGO_ENABLED') ?? true;
-    this.fileEnabled =
-      this.configService.get<boolean>('LOGGING_FILE_ENABLED') ?? true;
-
-    // Default retention days from environment
-    const defaultRetention =
-      this.configService.get<number>('LOGGING_DEFAULT_RETENTION_DAYS') ?? 30;
-    this.apiLogRetentionDays = defaultRetention;
-    this.securityLogRetentionDays = defaultRetention;
-
-    // Create Winston logger with transports
+    // Set up a minimal bootstrap logger for initialization only
     this.logger = winston.createLogger({
-      level: this.configService.get<string>('LOG_LEVEL') ?? 'info',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json(),
-      ),
-      defaultMeta: { service: 'api' },
-      transports: this.createTransports(),
-      exitOnError: false,
+      level: 'info',
+      format: winston.format.simple(),
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple(),
+          ),
+        }),
+      ],
     });
   }
 
-  /**
-   * Initialize logging system
-   */
   async onModuleInit(): Promise<void> {
     try {
-      // Get retention config from database
-      const apiLogConfig = await this.prismaService.systemConfig.findUnique({
-        where: { key: 'api_log_retention_days' },
+      // Define the expected configurations with defaults
+      const expectedConfigs = [
+        {
+          key: 'logging_mongo_enabled',
+          value: 'false',
+          description: 'Enable MongoDB for advanced logging features',
+        },
+        {
+          key: 'logging_file_enabled',
+          value: 'true',
+          description: 'Enable file-based logging',
+        },
+        {
+          key: 'log_level',
+          value: 'info',
+          description: 'Logging level (error, warn, info, debug)',
+        },
+        {
+          key: 'api_log_retention_days',
+          value: '30',
+          description: 'Number of days to retain API logs',
+        },
+        {
+          key: 'auth_log_retention_days',
+          value: '90',
+          description: 'Number of days to retain security logs',
+        },
+        {
+          key: 'log_directory',
+          value: 'logs',
+          description: 'Directory for log files',
+        },
+      ];
+
+      // First check if configs exist, create if needed
+      for (const config of expectedConfigs) {
+        const existingConfig = await this.prismaService.systemConfig.findUnique(
+          {
+            where: { key: config.key },
+          },
+        );
+
+        if (!existingConfig) {
+          await this.prismaService.systemConfig.create({
+            data: {
+              key: config.key,
+              value: config.value,
+              description: config.description,
+            },
+          });
+          console.log(
+            `Created missing config: ${config.key} = ${config.value}`,
+          );
+        }
+      }
+
+      // Get all system configurations for logging
+      const configItems = await this.prismaService.systemConfig.findMany({
+        where: {
+          key: {
+            in: expectedConfigs.map((c) => c.key),
+          },
+        },
       });
 
-      const securityLogConfig =
-        await this.prismaService.systemConfig.findUnique({
-          where: { key: 'auth_log_retention_days' },
-        });
+      // Create a map for easier access
+      const configMap = new Map(
+        configItems.map((item) => [item.key, item.value]),
+      );
 
-      // Set retention periods from config or use default
-      if (apiLogConfig) {
-        this.apiLogRetentionDays = parseInt(apiLogConfig.value, 10);
+      // Get configuration values (all keys are guaranteed to exist)
+      this.mongoEnabled = configMap.get('logging_mongo_enabled')! === 'true';
+      this.fileEnabled = configMap.get('logging_file_enabled')! === 'true';
+      const logLevel = configMap.get('log_level')!;
+
+      // Clamp retention days between 1 and 365 days
+      const rawApiDays = configMap.get('api_log_retention_days');
+      this.apiLogRetentionDays = Math.max(
+        1,
+        Math.min(365, parseInt(rawApiDays!, 10) || 30),
+      );
+      const rawSecurityDays = configMap.get('auth_log_retention_days');
+      this.securityLogRetentionDays = Math.max(
+        1,
+        Math.min(365, parseInt(rawSecurityDays!, 10) || 90),
+      );
+
+      // Create the actual configured logger
+      const transports: winston.transport[] = [];
+
+      // Always keep console in development
+      if (process.env.NODE_ENV !== 'production') {
+        transports.push(
+          new winston.transports.Console({
+            format: winston.format.combine(
+              winston.format.colorize(),
+              winston.format.simple(),
+            ),
+          }),
+        );
       }
 
-      if (securityLogConfig) {
-        this.securityLogRetentionDays = parseInt(securityLogConfig.value, 10);
+      // Add file transport if enabled
+      if (this.fileEnabled) {
+        const logDir = configMap.get('log_directory') ?? 'logs';
+        transports.push(
+          new winston.transports.DailyRotateFile({
+            dirname: logDir,
+            filename: 'application-%DATE%.log',
+            datePattern: 'YYYY-MM-DD',
+            maxSize: '20m',
+            maxFiles: '14d',
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.json(),
+            ),
+          }),
+        );
       }
 
-      // Create TTL indexes with the configured retention periods
+      // Create the fully configured logger
+      this.logger = winston.createLogger({
+        level: logLevel,
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.json(),
+        ),
+        defaultMeta: { service: 'api' },
+        transports,
+        exitOnError: false,
+      });
+
+      // Check MongoDB availability and set up TTL indexes if enabled
       if (this.mongoEnabled) {
-        await this.setupTtlIndexes();
+        try {
+          // Setup TTL indexes
+          await this.setupTtlIndexes();
+        } catch (mongoError) {
+          this.mongoEnabled = false;
+          this.logger.warn('MongoDB logging disabled due to error:', {
+            error:
+              mongoError instanceof Error
+                ? mongoError.message
+                : String(mongoError),
+            fallback: 'Using file-based logging only',
+          });
+        }
       }
 
-      // Log startup message
+      // Mark system as initialized
+      this.initialized = true;
+
       this.logger.info('Logging system initialized', {
         context: 'LoggingService',
         mongoEnabled: this.mongoEnabled,
@@ -92,45 +207,28 @@ export class LoggingService implements OnModuleInit {
       });
     } catch (error) {
       console.error('Failed to initialize logging system:', error);
-    }
-  }
-
-  /**
-   * Create Winston transports based on configuration
-   */
-  private createTransports(): winston.transport[] {
-    const transports: winston.transport[] = [];
-
-    // Always add console transport in development
-    if (process.env.NODE_ENV !== 'production') {
-      transports.push(
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.simple(),
-          ),
-        }),
-      );
-    }
-
-    // Add file transport if enabled
-    if (this.fileEnabled) {
-      const fileTransport = new winston.transports.DailyRotateFile({
-        dirname: this.configService.get<string>('LOG_DIR') ?? 'logs',
-        filename: 'application-%DATE%.log',
-        datePattern: 'YYYY-MM-DD',
-        maxSize: '20m',
-        maxFiles: '14d',
+      // Set up a basic fallback logger
+      this.logger = winston.createLogger({
+        level: 'info',
         format: winston.format.combine(
           winston.format.timestamp(),
           winston.format.json(),
         ),
+        transports: [
+          new winston.transports.Console(),
+          new winston.transports.DailyRotateFile({
+            dirname: 'logs',
+            filename: 'application-%DATE%.log',
+            datePattern: 'YYYY-MM-DD',
+            maxSize: '20m',
+            maxFiles: '14d',
+          }),
+        ],
       });
-
-      transports.push(fileTransport);
+      this.mongoEnabled = false;
+      this.fileEnabled = true;
+      this.initialized = true;
     }
-
-    return transports;
   }
 
   /**
@@ -193,6 +291,72 @@ export class LoggingService implements OnModuleInit {
         // Maybe set up a health check that can alert ops if TTL indexes aren't working
         // This could prevent the database from growing indefinitely
       }
+    }
+  }
+
+  /**
+   * Reconfigure TTL indexes based on current configuration
+   */
+  async reconfigureTtlIndexes(): Promise<void> {
+    try {
+      // Fetch the latest retention configuration
+      const apiLogConfig = await this.prismaService.systemConfig.findUnique({
+        where: { key: 'api_log_retention_days' },
+      });
+
+      const securityLogConfig =
+        await this.prismaService.systemConfig.findUnique({
+          where: { key: 'auth_log_retention_days' },
+        });
+
+      if (apiLogConfig) {
+        this.apiLogRetentionDays = Math.max(
+          1,
+          Math.min(365, parseInt(apiLogConfig.value, 10)),
+        );
+      }
+
+      if (securityLogConfig) {
+        this.securityLogRetentionDays = Math.max(
+          1,
+          Math.min(365, parseInt(securityLogConfig.value, 10)),
+        );
+      }
+
+      // Only proceed if MongoDB is enabled
+      if (this.mongoEnabled) {
+        await this.setupTtlIndexes();
+        this.logger.info('TTL indexes reconfigured', {
+          context: 'LoggingService',
+          apiLogRetentionDays: this.apiLogRetentionDays,
+          securityLogRetentionDays: this.securityLogRetentionDays,
+        });
+      }
+
+      return;
+    } catch (error) {
+      this.logger.error('Failed to reconfigure TTL indexes', {
+        context: 'LoggingService',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Reload logging configuration from system settings
+   */
+  async reloadConfiguration(): Promise<void> {
+    try {
+      // Refresh from the beginning
+      await this.onModuleInit();
+      return;
+    } catch (error) {
+      this.logger.error('Failed to reload logging configuration', {
+        context: 'LoggingService',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
   }
 
@@ -325,8 +489,43 @@ export class LoggingService implements OnModuleInit {
       .lean()
       .exec();
 
+    // Get unique user IDs to fetch user data
+    const uniqueUserIds = [...new Set(logs.map((log) => log.userId))];
+
+    // Fetch users from Prisma in a single query
+    const users = await this.prismaService.user.findMany({
+      where: {
+        id: {
+          in: uniqueUserIds,
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+
+    // Create map of users by ID for efficient lookups
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
+    // Enrich logs with user data
+    const enrichedLogs = logs.map((log) => {
+      const user = userMap.get(log.userId);
+      return {
+        ...log,
+        user: user
+          ? {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+            }
+          : undefined,
+      };
+    });
+
     return {
-      data: logs,
+      data: enrichedLogs,
       pagination: {
         total,
         page,

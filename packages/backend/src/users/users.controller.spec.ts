@@ -5,20 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UnauthorizedException } from '@nestjs/common';
 import { User } from '../generated/prisma';
 import { RequestWithUser } from './interfaces/user-request.interface';
-import { AuthCookieService } from '../auth/services/auth-cookie.service';
 import { DeviceService } from '../auth/services/device/device.service';
-import {
-  ActivityLogService,
-  AuthEventType,
-} from '../auth/services/activity-log/activity-log.service';
-import { AuthService } from '../auth/auth.service';
 import { Response } from 'express';
+import { AuthService } from '@/auth/services/auth/auth.service';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let prismaService: PrismaService;
   let deviceService: DeviceService;
-  let activityLogService: ActivityLogService;
   let authService: AuthService;
 
   // Mock user data

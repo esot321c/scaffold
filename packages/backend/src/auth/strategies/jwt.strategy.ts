@@ -5,7 +5,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { AppConfig } from '@/config/configuration';
 import { Request } from 'express';
 import { LoggingService } from '@/logging/services/logging/logging.service';
-import { AuthEventType } from '@/logging/interfaces/event-types';
+import { AuthEventType } from '@scaffold/types';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
