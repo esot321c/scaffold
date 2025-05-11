@@ -214,7 +214,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - CSRF protection for all endpoints
 - Comprehensive activity and security logging
 - Admin portal with user management
-- Device tracking and management
 - Type-safe communication between frontend and backend
 - API Standardization with consistent error handling
 
@@ -227,6 +226,15 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - User activity tracking and visualization
 
 ### Required for v1.0
+
+#### Device Management
+
+- [ ] Complete device management UI for user profiles
+- [ ] Implement proper device recognition and fingerprinting
+- [ ] Add device approval/verification workflow
+- [ ] Enhance device-related logging and notifications
+- [ ] Build suspicious login detection based on device patterns
+- [ ] Create consistent device naming and identification
 
 #### Testing
 
