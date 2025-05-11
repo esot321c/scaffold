@@ -29,12 +29,9 @@ function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-accent text-accent-foreground py-20">
+      <section className="py-20">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to get started?</h2>
-          <p className="mb-8">
-            Create professional quotes in minutes, not hours.
-          </p>
           <Button size="lg">Sign Up Free</Button>
         </div>
       </section>

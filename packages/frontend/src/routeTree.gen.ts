@@ -15,6 +15,7 @@ import { Route as AdminImport } from './routes/admin'
 import { Route as IndexImport } from './routes/index'
 import { Route as ProfileIndexImport } from './routes/profile/index'
 import { Route as LoginIndexImport } from './routes/login/index'
+import { Route as LegalIndexImport } from './routes/legal/index'
 import { Route as AdminIndexImport } from './routes/admin/index'
 import { Route as AuthSuccessImport } from './routes/auth/success'
 import { Route as ProfileSecurityIndexImport } from './routes/profile/security/index'
@@ -45,6 +46,12 @@ const ProfileIndexRoute = ProfileIndexImport.update({
 const LoginIndexRoute = LoginIndexImport.update({
   id: '/login/',
   path: '/login/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LegalIndexRoute = LegalIndexImport.update({
+  id: '/legal/',
+  path: '/legal/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -116,6 +123,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexImport
       parentRoute: typeof AdminImport
     }
+    '/legal/': {
+      id: '/legal/'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof LegalIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/login/': {
       id: '/login/'
       path: '/login'
@@ -184,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/auth/success': typeof AuthSuccessRoute
   '/admin/': typeof AdminIndexRoute
+  '/legal': typeof LegalIndexRoute
   '/login': typeof LoginIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/admin/logs': typeof AdminLogsIndexRoute
@@ -196,6 +211,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/success': typeof AuthSuccessRoute
   '/admin': typeof AdminIndexRoute
+  '/legal': typeof LegalIndexRoute
   '/login': typeof LoginIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/admin/logs': typeof AdminLogsIndexRoute
@@ -210,6 +226,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/auth/success': typeof AuthSuccessRoute
   '/admin/': typeof AdminIndexRoute
+  '/legal/': typeof LegalIndexRoute
   '/login/': typeof LoginIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/admin/logs/': typeof AdminLogsIndexRoute
@@ -225,6 +242,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth/success'
     | '/admin/'
+    | '/legal'
     | '/login'
     | '/profile'
     | '/admin/logs'
@@ -236,6 +254,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/success'
     | '/admin'
+    | '/legal'
     | '/login'
     | '/profile'
     | '/admin/logs'
@@ -248,6 +267,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth/success'
     | '/admin/'
+    | '/legal/'
     | '/login/'
     | '/profile/'
     | '/admin/logs/'
@@ -261,6 +281,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthSuccessRoute: typeof AuthSuccessRoute
+  LegalIndexRoute: typeof LegalIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   ProfileSecurityIndexRoute: typeof ProfileSecurityIndexRoute
@@ -270,6 +291,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthSuccessRoute: AuthSuccessRoute,
+  LegalIndexRoute: LegalIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   ProfileSecurityIndexRoute: ProfileSecurityIndexRoute,
@@ -288,6 +310,7 @@ export const routeTree = rootRoute
         "/",
         "/admin",
         "/auth/success",
+        "/legal/",
         "/login/",
         "/profile/",
         "/profile/security/"
@@ -311,6 +334,9 @@ export const routeTree = rootRoute
     "/admin/": {
       "filePath": "admin/index.tsx",
       "parent": "/admin"
+    },
+    "/legal/": {
+      "filePath": "legal/index.tsx"
     },
     "/login/": {
       "filePath": "login/index.tsx"
