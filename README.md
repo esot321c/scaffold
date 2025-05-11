@@ -282,10 +282,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ### Future Enhancements (v1.x)
 
 - Additional authentication providers (Microsoft, GitHub)
-- Improved analytics dashboard
-- Notification system
+- User notification system
 - User roles and permissions system
 - Enhanced mobile support
-- Self-hosted option documentation
 - Internationalization (i18n) support for multilingual deployments
-- Advanced metrics and telemetry for production monitoring

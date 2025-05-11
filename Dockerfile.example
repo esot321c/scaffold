@@ -1,7 +1,7 @@
 # Dockerfile.example
 
 # Base image with pnpm
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@10.6.5 --activate
@@ -26,7 +26,7 @@ COPY . .
 RUN pnpm run build
 
 # Backend production image
-FROM base AS backend
+FROM node:24-alpine AS backend
 WORKDIR /app
 
 # Copy runtime dependencies and build artifacts
@@ -47,7 +47,7 @@ EXPOSE 3001
 CMD ["node", "dist/main.js"]
 
 # Frontend production image
-FROM base AS frontend
+FROM node:24-alpine AS frontend
 WORKDIR /app
 
 # Copy build output
