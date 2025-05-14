@@ -1,0 +1,29 @@
+{{> header}}
+<div class="content">
+  <h2>Security Alert: {{eventTitle}}</h2>
+  
+  <div class="alert alert-{{severity}}">
+    <strong>Event:</strong> {{eventTitle}}<br>
+    <strong>Time:</strong> {{timestamp}}<br>
+    <strong>Description:</strong> {{eventDescription}}
+  </div>
+
+  {{#if details.userId}}
+  <div class="details">
+    <h3>User Information</h3>
+    {{#if details.[User ID]}}<strong>User ID:</strong> {{details.[User ID]}}<br>{{/if}}
+    {{#if details.[User Email]}}<strong>Email:</strong> {{details.[User Email]}}<br>{{/if}}
+    {{#if details.[IP Address]}}<strong>IP Address:</strong> {{details.[IP Address]}}<br>{{/if}}
+    {{#if details.[User Agent]}}<strong>User Agent:</strong> {{details.[User Agent]}}<br>{{/if}}
+  </div>
+  {{/if}}
+
+  {{#if actionUrl}}
+  <p style="text-align: center; margin: 20px 0;">
+    <a href="{{actionUrl}}" class="button">View Security Logs</a>
+  </p>
+  {{/if}}
+
+  <p>If this activity looks suspicious, please investigate immediately.</p>
+</div>
+{{> footer}}

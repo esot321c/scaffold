@@ -4,8 +4,8 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { CurrentUser } from '@/auth/decorators/current-user.decorator';
 import { User } from '@/generated/prisma';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { AdminGuard } from '@/admin/guards/admin/admin.guard';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { AdminGuard } from '@/admin/guards/admin.guard';
+import { LoggingService } from '@/logging/services/logging.service';
 import { LogRetentionSettings } from '@scaffold/types';
 
 @ApiTags('admin')

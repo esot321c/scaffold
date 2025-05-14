@@ -1,75 +1,42 @@
-import * as Joi from 'joi';
+import { z } from 'zod';
 
-export const validationSchema = Joi.object({
-  NODE_ENV: Joi.string()
-    .valid('development', 'production', 'test')
+export const validationSchema = z.object({
+  NODE_ENV: z
+    .enum(['development', 'production', 'test'])
     .default('development'),
-  PORT: Joi.number().default(3001),
-  BASE_URL: Joi.string().required(),
+  PORT: z.number().int().positive().default(3001),
+  BASE_URL: z.string().url(),
 
   // Auth
-  JWT_SECRET: Joi.string().required(),
-
-  GOOGLE_CLIENT_ID: Joi.string().required(),
-  GOOGLE_CLIENT_SECRET: Joi.string().required(),
-
-  LINKEDIN_CLIENT_ID: Joi.string().required(),
-  LINKEDIN_CLIENT_SECRET: Joi.string().required(),
-
-  FRONTEND_URL: Joi.string().required(),
+  JWT_SECRET: z.string().min(1),
+  GOOGLE_CLIENT_ID: z.string().min(1),
+  GOOGLE_CLIENT_SECRET: z.string().min(1),
+  LINKEDIN_CLIENT_ID: z.string().min(1),
+  LINKEDIN_CLIENT_SECRET: z.string().min(1),
+  FRONTEND_URL: z.string().url(),
 
   // Redis
-  REDIS_URL: Joi.string().required(),
+  REDIS_URL: z.string().min(1),
 
   // PostgreSQL
-  DATABASE_URL: Joi.string().required(),
+  DATABASE_URL: z.string().min(1),
 
   // MongoDB
-  MONGODB_URI: Joi.string().default('mongodb://localhost:27017/logging'),
-  MONGODB_USER: Joi.string().optional(),
-  MONGODB_PASSWORD: Joi.string().optional(),
+  MONGODB_URI: z.string().default('mongodb://localhost:27017/logging'),
+  MONGODB_USER: z.string().optional(),
+  MONGODB_PASSWORD: z.string().optional(),
+
+  // Email
+  RESEND_API_KEY: z.string(),
+  FROM_ADDRESS: z.string().email(),
 
   // Logging
-  LOG_LEVEL: Joi.string()
-    .valid('error', 'warn', 'info', 'debug')
-    .default('info'),
-  LOG_DIR: Joi.string().default('logs'),
-  LOGGING_MONGO_ENABLED: Joi.boolean().default(true),
-  LOGGING_FILE_ENABLED: Joi.boolean().default(true),
-  LOGGING_DEFAULT_RETENTION_DAYS: Joi.number().default(30),
+  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+  LOG_DIR: z.string().default('logs'),
+  LOGGING_MONGO_ENABLED: z.boolean().default(true),
+  LOGGING_FILE_ENABLED: z.boolean().default(true),
+  LOGGING_DEFAULT_RETENTION_DAYS: z.number().int().positive().default(30),
 });
 
-export interface EnvironmentVariables {
-  NODE_ENV: string;
-  BASE_URL: string;
-  PORT: number;
-
-  // Auth
-  JWT_SECRET: string;
-
-  GOOGLE_CLIENT_ID: string;
-  GOOGLE_CLIENT_SECRET: string;
-
-  LINKEDIN_CLIENT_ID: string;
-  LINKEDIN_CLIENT_SECRET: string;
-
-  FRONTEND_URL: string;
-
-  // Redis
-  REDIS_URL: string;
-
-  // PostgreSQL
-  DATABASE_URL: string;
-
-  // MongoDB
-  MONGODB_URI: string;
-  MONGODB_USER?: string;
-  MONGODB_PASSWORD?: string;
-
-  // Logging
-  LOG_LEVEL: string;
-  LOG_DIR: string;
-  LOGGING_MONGO_ENABLED: boolean;
-  LOGGING_FILE_ENABLED: boolean;
-  LOGGING_DEFAULT_RETENTION_DAYS: number;
-}
+// The type is automatically inferred from the schema
+export type EnvironmentVariables = z.infer<typeof validationSchema>;

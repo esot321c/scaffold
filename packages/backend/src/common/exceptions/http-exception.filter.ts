@@ -7,12 +7,16 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Logger } from '@nestjs/common';
+import { LoggingService } from '@/logging/services/logging.service';
+import { SystemHealthService } from '@/monitoring/services/system-health.service';
 
 @Catch(HttpException)
 @Injectable()
 export class HttpExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(HttpExceptionFilter.name);
+  constructor(
+    private loggingService: LoggingService,
+    private systemHealthService: SystemHealthService,
+  ) {}
 
   catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -24,8 +28,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     // Use the request ID that was set by the middleware
     const requestId = request.headers['x-request-id'] as string;
 
-    // Log the error with contextual information
-    this.logger.error({
+    // Log the error with LoggingService
+    const logData = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
@@ -34,7 +38,29 @@ export class HttpExceptionFilter implements ExceptionFilter {
       error: errorResponse,
       // Don't log sensitive data in production
       body: process.env.NODE_ENV === 'production' ? '[redacted]' : request.body,
-    });
+    };
+
+    // Use appropriate log level based on status code
+    if (status >= 500) {
+      this.loggingService.error(
+        `HTTP ${status} Error: ${request.method} ${request.path}`,
+        'HttpExceptionFilter',
+        exception,
+        logData,
+      );
+
+      // Record critical errors for health monitoring
+      this.systemHealthService.recordError(`HTTP_${status}`);
+    } else if (status >= 400) {
+      this.loggingService.warn(
+        `HTTP ${status} Error: ${request.method} ${request.path}`,
+        'HttpExceptionFilter',
+        logData,
+      );
+
+      // Still record 4xx errors but they're less critical
+      this.systemHealthService.recordError(`HTTP_${status}`);
+    }
 
     // Format the error response
     const formattedError = {

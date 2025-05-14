@@ -9,14 +9,14 @@ import {
   ParseBoolPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { AdminGuard } from '@/admin/guards/admin/admin.guard';
+import { AdminGuard } from '@/admin/guards/admin.guard';
 import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
   ApiQuery,
 } from '@nestjs/swagger';
-import { LoggingService } from '../services/logging/logging.service';
+import { LoggingService } from '../services/logging.service';
 import {
   ApiLog,
   AuthEventType,

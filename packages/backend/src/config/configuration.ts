@@ -28,6 +28,13 @@ export class AppConfig {
     };
   }
 
+  get email() {
+    return {
+      resendApiKey: this.configService.get('RESEND_API_KEY', { infer: true }),
+      fromAddress: this.configService.get('FROM_ADDRESS', { infer: true }),
+    };
+  }
+
   get baseUrl() {
     return {
       url: this.configService.get('BASE_URL', { infer: true }),

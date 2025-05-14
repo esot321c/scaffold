@@ -5,8 +5,8 @@ import { AppConfig } from '../config/configuration';
 
 import { Request, Response } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthService } from './services/auth/auth.service';
-import { AuthCookieService } from './services/auth-cookie/auth-cookie.service';
+import { AuthService } from './services/auth.service';
+import { AuthCookieService } from './services/auth-cookie.service';
 
 // Create mocks
 const mockAuthService = {

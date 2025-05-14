@@ -1,0 +1,28 @@
+{{> header}}
+<div class="content">
+  <h2>System Event: {{eventTitle}}</h2>
+  
+  <div class="alert alert-{{severity}}">
+    <strong>Severity:</strong> {{severity}}<br>
+    <strong>Time:</strong> {{timestamp}}<br>
+    <strong>Description:</strong> {{eventDescription}}
+  </div>
+
+  {{#if details}}
+  <div class="details">
+    <h3>Event Details</h3>
+    {{#each details}}
+      <strong>{{@key}}:</strong> {{this}}<br>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{#if actionUrl}}
+  <p style="text-align: center; margin: 20px 0;">
+    <a href="{{actionUrl}}" class="button">View in Admin Panel</a>
+  </p>
+  {{/if}}
+
+  <p>If you have any questions, please contact <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>.</p>
+</div>
+{{> footer}}

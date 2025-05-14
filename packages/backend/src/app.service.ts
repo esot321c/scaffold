@@ -7,7 +7,7 @@ export class AppService {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      version: '0.0.1',
+      version: '0.11.0',
     };
   }
 }

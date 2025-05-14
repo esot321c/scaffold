@@ -13,16 +13,16 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
-import { AuthService } from './services/auth/auth.service';
+import { AuthService } from './services/auth.service';
 import { AppConfig } from '@/config/configuration';
 import { ApiBody, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OAuthUser } from './interfaces/oauth-user.interface';
 import { MobileAuthDto } from './dto/mobile-auth.dto';
-import { AuthCookieService } from './services/auth-cookie/auth-cookie.service';
+import { AuthCookieService } from './services/auth-cookie.service';
 import { AuthEventType } from '@scaffold/types';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { LoggingService } from '@/logging/services/logging.service';
 
 @Controller('auth')
 export class AuthController {

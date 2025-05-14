@@ -1,6 +1,6 @@
 import { Module, Global } from '@nestjs/common';
 import { AdminLogsController } from './controllers/admin-logs.controller';
-import { LoggingService } from './services/logging/logging.service';
+import { LoggingService } from './services/logging.service';
 import { MongoDBModule } from '@/mongodb/mongodb.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { MongooseModule } from '@nestjs/mongoose';

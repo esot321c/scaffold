@@ -19,7 +19,9 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { LoggingModule } from './logging/logging.module';
 import { ApiLoggingMiddleware } from './logging/middleware/api-logging.middleware';
 import { MongoDBModule } from './mongodb/mongodb.module';
-import { LogsController } from './admin/controllers/logs/logs.controller';
+import { LogsController } from './admin/controllers/logs.controller';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { LogsController } from './admin/controllers/logs/logs.controller';
     AuthModule,
     UsersModule,
     AdminModule,
+    NotificationsModule,
+    MonitoringModule,
   ],
   controllers: [AppController, UsersController, LogsController],
   providers: [AppService],

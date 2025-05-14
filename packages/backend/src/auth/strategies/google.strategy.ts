@@ -4,8 +4,8 @@ import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { AppConfig } from 'src/config/configuration';
 import { Request } from 'express';
 import { PrismaService } from '@/prisma/prisma.service';
-import { AuthService } from '../services/auth/auth.service';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { AuthService } from '../services/auth.service';
+import { LoggingService } from '@/logging/services/logging.service';
 import { AuthEventType } from '@scaffold/types';
 
 @Injectable()

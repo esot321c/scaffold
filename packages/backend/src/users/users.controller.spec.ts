@@ -5,9 +5,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UnauthorizedException } from '@nestjs/common';
 import { User } from '../generated/prisma';
 import { RequestWithUser } from './interfaces/user-request.interface';
-import { DeviceService } from '../auth/services/device/device.service';
+import { DeviceService } from '../auth/services/device.service';
 import { Response } from 'express';
-import { AuthService } from '@/auth/services/auth/auth.service';
+import { AuthService } from '@/auth/services/auth.service';
 
 describe('UsersController', () => {
   let controller: UsersController;

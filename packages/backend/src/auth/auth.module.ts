@@ -7,10 +7,10 @@ import { AppConfig } from 'src/config/configuration';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ScheduleModule } from '@nestjs/schedule';
-import { DeviceService } from './services/device/device.service';
-import { TokenRotationService } from './services/token-rotation/token-rotation.service';
-import { AuthService } from './services/auth/auth.service';
-import { AuthCookieService } from './services/auth-cookie/auth-cookie.service';
+import { DeviceService } from './services/device.service';
+import { TokenRotationService } from './services/token-rotation.service';
+import { AuthService } from './services/auth.service';
+import { AuthCookieService } from './services/auth-cookie.service';
 
 @Module({
   imports: [

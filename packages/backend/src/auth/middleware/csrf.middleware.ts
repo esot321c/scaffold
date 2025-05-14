@@ -1,5 +1,5 @@
 import { AuthEventType } from '@scaffold/types';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { LoggingService } from '@/logging/services/logging.service';
 import { Injectable, NestMiddleware, ForbiddenException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 

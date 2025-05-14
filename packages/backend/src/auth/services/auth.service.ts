@@ -1,9 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AuthProvider, DeviceInfoDto } from '../../dto/mobile-auth.dto';
+import { AuthProvider, DeviceInfoDto } from '../dto/mobile-auth.dto';
 import * as crypto from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { LoggingService } from '@/logging/services/logging.service';
 import { AuthEventType } from '@scaffold/types';
 
 interface OAuthUserData {

@@ -22,11 +22,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthEventType, UserRole, UserWithSession } from '@scaffold/types';
 import { RequestWithUser } from './interfaces/user-request.interface';
-import { DeviceService } from '../auth/services/device/device.service';
+import { DeviceService } from '../auth/services/device.service';
 import { DeviceInfoDto } from 'src/auth/dto/mobile-auth.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { AuthCookieService } from '@/auth/services/auth-cookie/auth-cookie.service';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { AuthCookieService } from '@/auth/services/auth-cookie.service';
+import { LoggingService } from '@/logging/services/logging.service';
 import { Request } from 'express';
 
 @ApiTags('users')

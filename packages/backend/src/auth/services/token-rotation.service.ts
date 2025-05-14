@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '@/prisma/prisma.service';
-import { AuthService } from '../auth/auth.service';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { AuthService } from './auth.service';
+import { LoggingService } from '@/logging/services/logging.service';
 import { AuthEventType } from '@scaffold/types';
 
 @Injectable()

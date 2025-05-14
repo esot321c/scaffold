@@ -22,3 +22,42 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   SUPER_ADMIN = 'SUPER_ADMIN',
 }
+
+export enum SystemEventType {
+  // Service health
+  SERVICE_DOWN = 'service_down',
+  SERVICE_RECOVERED = 'service_recovered',
+  HIGH_ERROR_RATE = 'high_error_rate',
+
+  // Database
+  DATABASE_CONNECTION_LOST = 'database_connection_lost',
+  DATABASE_CONNECTION_RESTORED = 'database_connection_restored',
+  DATABASE_SLOW_QUERY = 'database_slow_query',
+
+  // Queue system
+  QUEUE_FAILURE = 'queue_failure',
+  QUEUE_BACKED_UP = 'queue_backed_up',
+
+  // System resources
+  DISK_SPACE_LOW = 'disk_space_low',
+  MEMORY_USAGE_HIGH = 'memory_usage_high',
+  CPU_USAGE_HIGH = 'cpu_usage_high',
+
+  // API
+  API_RATE_LIMIT_EXCEEDED = 'api_rate_limit_exceeded',
+  API_ENDPOINT_SLOW = 'api_endpoint_slow',
+
+  // Deployments
+  DEPLOYMENT_STARTED = 'deployment_started',
+  DEPLOYMENT_COMPLETED = 'deployment_completed',
+  DEPLOYMENT_FAILED = 'deployment_failed',
+
+  // Backups
+  BACKUP_STARTED = 'backup_started',
+  BACKUP_COMPLETED = 'backup_completed',
+  BACKUP_FAILED = 'backup_failed',
+
+  // General
+  CRITICAL_ERROR = 'critical_error',
+  SECURITY_ALERT = 'security_alert',
+}

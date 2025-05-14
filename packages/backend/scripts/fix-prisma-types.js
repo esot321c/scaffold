@@ -1,3 +1,5 @@
+// NOTE: This does not appear to be needed now in prisma 6.7.0
+
 const fs = require('fs');
 const path = require('path');
 

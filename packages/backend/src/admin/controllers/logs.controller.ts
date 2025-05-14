@@ -9,7 +9,7 @@ import {
   ParseBoolPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { AdminGuard } from '@/admin/guards/admin/admin.guard';
+import { AdminGuard } from '@/admin/guards/admin.guard';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -21,7 +21,7 @@ import { createObjectCsvWriter } from 'csv-writer';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { LoggingService } from '@/logging/services/logging.service';
 import { AuthEventType, PaginatedResponse, SecurityLog } from '@scaffold/types';
 
 @ApiTags('admin')

@@ -11,9 +11,9 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { LoggingService } from '@/logging/services/logging.service';
 import { AdminUser, PaginatedResponse } from '@scaffold/types';
-import { AdminGuard } from '@/admin/guards/admin/admin.guard';
+import { AdminGuard } from '@/admin/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { UserRole } from '@/generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';

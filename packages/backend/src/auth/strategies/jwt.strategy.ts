@@ -4,7 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AppConfig } from '@/config/configuration';
 import { Request } from 'express';
-import { LoggingService } from '@/logging/services/logging/logging.service';
+import { LoggingService } from '@/logging/services/logging.service';
 import { AuthEventType } from '@scaffold/types';
 
 @Injectable()
