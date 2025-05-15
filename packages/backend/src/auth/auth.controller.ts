@@ -234,6 +234,7 @@ export class AuthController {
   }
 
   @Get('csrf')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get a new CSRF token' })
   getCsrfToken(@Res({ passthrough: true }) res: Response) {
     const token = this.cookieService.setCsrfCookie(res);
