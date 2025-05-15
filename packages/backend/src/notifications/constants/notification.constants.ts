@@ -67,8 +67,8 @@ export const DEFAULT_NOTIFICATION_SETTINGS: AdminNotificationSettings = {
 export const EMAIL_TEMPLATES = {
   AUTH_EVENT: 'auth-event',
   SYSTEM_EVENT: 'system-event',
-  DIGEST: 'digest',
-  TEST: 'test-notification',
+  // DIGEST: 'digest',
+  // TEST: 'test-notification',
 } as const;
 
 export const SEVERITY_PRIORITIES: Record<NotificationPriority, number> = {

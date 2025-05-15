@@ -4,7 +4,7 @@
   "author": "",
   "private": true,
   "scripts": {
-    "build": "pnpm run prisma:generate && nest build",
+    "build": "pnpm prisma generate && nest build",
     "start": "nest start",
     "dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -13,8 +13,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prisma:generate": "prisma generate && node scripts/fix-prisma-types.js"
+    "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.0",

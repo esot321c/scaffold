@@ -4,7 +4,7 @@ export const validationSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-  PORT: z.number().int().positive().default(3001),
+  PORT: z.coerce.number().int().positive().default(3001),
   BASE_URL: z.string().url(),
 
   // Auth
@@ -33,9 +33,18 @@ export const validationSchema = z.object({
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
   LOG_DIR: z.string().default('logs'),
-  LOGGING_MONGO_ENABLED: z.boolean().default(true),
-  LOGGING_FILE_ENABLED: z.boolean().default(true),
-  LOGGING_DEFAULT_RETENTION_DAYS: z.number().int().positive().default(30),
+  LOGGING_MONGO_ENABLED: z
+    .string()
+    .transform((val) => val === 'true')
+    .default('true'),
+  LOGGING_FILE_ENABLED: z.preprocess(
+    (val) => val === 'true' || val === true,
+    z.boolean().default(true),
+  ),
+  LOGGING_DEFAULT_RETENTION_DAYS: z
+    .string()
+    .transform((val) => parseInt(val, 10))
+    .default('30'),
 });
 
 // The type is automatically inferred from the schema

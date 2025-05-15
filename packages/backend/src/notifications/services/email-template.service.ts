@@ -10,7 +10,6 @@ import type {
 import { AuthEventType, SystemEventType } from '@scaffold/types';
 import { EMAIL_TEMPLATES } from '../constants/notification.constants';
 import { LoggingService } from '@/logging/services/logging.service';
-import { OnModuleInit } from '@nestjs/common';
 
 interface EmailTemplateContext {
   adminName?: string;
@@ -216,34 +215,34 @@ export class EmailTemplateService {
   }
 
   // Helper for digest emails
-  async renderDigestEmail(
-    jobs: NotificationJob[],
-    adminEmail: string,
-    adminName?: string,
-  ): Promise<{ subject: string; html: string }> {
-    const template = this.compiledTemplates.get(EMAIL_TEMPLATES.DIGEST);
-    if (!template) {
-      throw new Error('Digest template not found');
-    }
+  // async renderDigestEmail(
+  //   jobs: NotificationJob[],
+  //   adminEmail: string,
+  //   adminName?: string,
+  // ): Promise<{ subject: string; html: string }> {
+  //   const template = this.compiledTemplates.get(EMAIL_TEMPLATES.DIGEST);
+  //   if (!template) {
+  //     throw new Error('Digest template not found');
+  //   }
 
-    const groupedEvents = this.groupEventsByType(jobs);
-    const summary = this.calculateSummary(jobs);
+  //   const groupedEvents = this.groupEventsByType(jobs);
+  //   const summary = this.calculateSummary(jobs);
 
-    const context = {
-      adminName,
-      period: this.getDigestPeriod(jobs),
-      groupedEvents,
-      summary,
-      unsubscribeUrl: `${process.env.FRONTEND_URL}/admin/notification-settings`,
-      appName: 'Scaffold',
-      totalEvents: jobs.length,
-    };
+  //   const context = {
+  //     adminName,
+  //     period: this.getDigestPeriod(jobs),
+  //     groupedEvents,
+  //     summary,
+  //     unsubscribeUrl: `${process.env.FRONTEND_URL}/admin/notification-settings`,
+  //     appName: 'Scaffold',
+  //     totalEvents: jobs.length,
+  //   };
 
-    const html = template(context);
-    const subject = `Scaffold Admin Digest - ${summary.critical} critical, ${summary.high} high priority events`;
+  //   const html = template(context);
+  //   const subject = `Scaffold Admin Digest - ${summary.critical} critical, ${summary.high} high priority events`;
 
-    return { subject, html };
-  }
+  //   return { subject, html };
+  // }
 
   private groupEventsByType(
     jobs: NotificationJob[],

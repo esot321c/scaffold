@@ -41,6 +41,7 @@ export interface NotificationJob {
     source: string; // service or module that triggered this
     correlationId?: string; // for tracking related events
   };
+  _preventRetry?: boolean;
 }
 
 export interface NotificationHistory {

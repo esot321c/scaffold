@@ -6,6 +6,7 @@ import { EmailTemplateService } from './services/email-template.service';
 import { NotificationProcessor } from './processors/notification.processor';
 import { AdminNotificationsController } from './controllers/admin-notifications.controller';
 import { RedisModule } from '@/redis/redis.module';
+import { ErrorHandlingService } from '@/common/error-handling/services/error-handling.service';
 
 @Module({
   imports: [PrismaModule, RedisModule],
@@ -15,6 +16,7 @@ import { RedisModule } from '@/redis/redis.module';
     NotificationQueueService,
     EmailTemplateService,
     NotificationProcessor,
+    ErrorHandlingService,
   ],
   exports: [NotificationsService],
 })
