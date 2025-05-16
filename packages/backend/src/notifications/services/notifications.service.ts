@@ -1,27 +1,188 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { LoggingService } from '@/logging/services/logging.service';
 import { NotificationQueueService } from './notification-queue.service';
+import { EmailTemplateService } from './email-template.service';
 import {
   NotificationEventType,
   NotificationJob,
   AdminNotificationSettings,
   NotificationEventData,
   NotificationPriority,
+  NotificationEvent,
 } from '@scaffold/types';
 import { DEFAULT_NOTIFICATION_SETTINGS } from '../constants/notification.constants';
-import { toZonedTime } from 'date-fns-tz';
-import { Admin } from '@/generated/prisma';
 import { DigestProcessorService } from './digest-processor.service';
+import { Resend } from 'resend';
+import { Admin } from '@/generated/prisma';
+import { AppConfig } from '@/config/configuration';
+import { OnEvent } from '@nestjs/event-emitter';
+
+interface AdminEmailInfo {
+  id: string;
+  userId: string;
+  email: string;
+  name?: string;
+  lastRefreshed: Date;
+}
 
 @Injectable()
-export class NotificationsService {
+export class NotificationsService implements OnModuleInit {
+  // Cache of admin emails for fallback during DB outages
+  private adminEmailCache: AdminEmailInfo[] = [];
+
+  // Last time the cache was refreshed
+  private lastCacheRefresh: Date | null = null;
+
+  // Cache expiry time (1 hour)
+  private readonly CACHE_TTL_MS = 60 * 60 * 1000;
+
+  // Emergency admin emails from environment
+  private emergencyEmails: string[] = [];
+
+  private resend: Resend;
+
   constructor(
     private prisma: PrismaService,
     private loggingService: LoggingService,
     private queueService: NotificationQueueService,
     private digestProcessor: DigestProcessorService,
-  ) {}
+    private emailTemplateService: EmailTemplateService,
+    private config: AppConfig,
+  ) {
+    // Initialize Resend client
+    this.resend = new Resend(this.config.email.resendApiKey);
+
+    // Parse emergency emails from environment
+    this.parseEmergencyEmails();
+  }
+
+  async onModuleInit() {
+    // Initial load of admin emails
+    await this.refreshAdminEmailCache();
+
+    // Set up periodic refresh (every 15 minutes)
+    setInterval(() => this.refreshAdminEmailCache(), 15 * 60 * 1000);
+  }
+
+  @OnEvent('notification.send')
+  async handleNotificationEvent(payload: NotificationEvent) {
+    return this.triggerNotification(
+      payload.type,
+      payload.data,
+      payload.source,
+      payload.correlationId,
+    );
+  }
+
+  /**
+   * Parse emergency admin emails from environment variable
+   */
+  private parseEmergencyEmails(): void {
+    const envEmails = this.config.email?.emergencyAdminEmails;
+    if (!envEmails) {
+      this.emergencyEmails = [];
+      return;
+    }
+
+    this.emergencyEmails = envEmails
+      .split(',')
+      .map((email) => email.trim())
+      .filter((email) => email && this.isValidEmail(email));
+
+    this.loggingService.info(
+      `Loaded ${this.emergencyEmails.length} emergency admin emails from environment`,
+      'NotificationsService',
+    );
+  }
+
+  /**
+   * Simple email validation
+   */
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  /**
+   * Refresh the admin email cache
+   */
+  async refreshAdminEmailCache(): Promise<void> {
+    try {
+      // First, get all admins
+      const admins = await this.prisma.admin.findMany();
+
+      if (admins.length === 0) {
+        this.loggingService.warn(
+          'No admins found in database',
+          'NotificationsService',
+        );
+        return;
+      }
+
+      // Get admin user IDs
+      const userIds = admins.map((admin) => admin.userId);
+
+      // Then, query users separately
+      const users = await this.prisma.user.findMany({
+        where: {
+          id: {
+            in: userIds,
+          },
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      });
+
+      // Create a map for efficient lookups
+      const userMap = new Map(users.map((user) => [user.id, user]));
+
+      // Update the cache
+      this.adminEmailCache = admins
+        .filter((admin) => userMap.has(admin.userId))
+        .map((admin) => {
+          const user = userMap.get(admin.userId)!;
+          return {
+            id: admin.id,
+            userId: admin.userId,
+            email: user.email,
+            name: user.name ?? undefined,
+            lastRefreshed: new Date(),
+          };
+        });
+
+      this.lastCacheRefresh = new Date();
+      this.loggingService.info(
+        `Refreshed admin email cache: ${this.adminEmailCache.length} emails`,
+        'NotificationsService',
+      );
+    } catch (error) {
+      this.loggingService.error(
+        'Failed to refresh admin email cache',
+        'NotificationsService',
+        error as Error,
+      );
+    }
+  }
+
+  /**
+   * Get valid admin emails from cache
+   */
+  private getValidCachedAdminEmails(): AdminEmailInfo[] {
+    if (!this.lastCacheRefresh) return [];
+
+    const now = Date.now();
+    const expiryTime = this.lastCacheRefresh.getTime() + this.CACHE_TTL_MS;
+
+    // Return cached emails if they're still valid
+    if (now < expiryTime) {
+      return this.adminEmailCache;
+    }
+
+    return [];
+  }
 
   async triggerNotification(
     event: NotificationEventType,
@@ -30,98 +191,281 @@ export class NotificationsService {
     correlationId?: string,
   ): Promise<void> {
     try {
-      // Get all admins
-      const admins = await this.prisma.admin.findMany();
+      // Flag to track if we need to use emergency notification
+      let useEmergency = false;
+      let failureError: Error | null = null;
 
-      // Get all relevant users in a single query
-      const userIds = admins.map((admin) => admin.userId);
-      const users = await this.prisma.user.findMany({
-        where: {
-          id: {
-            in: userIds,
+      // Check if it's a critical notification that should always be delivered
+      const isCritical = data.severity === 'critical';
+
+      try {
+        // Try the normal DB-based notification flow
+        // Get all admins
+        const admins = await this.prisma.admin.findMany();
+
+        // Get all relevant users in a single query
+        const userIds = admins.map((admin) => admin.userId);
+        const users = await this.prisma.user.findMany({
+          where: {
+            id: {
+              in: userIds,
+            },
           },
-        },
-      });
+        });
 
-      // Create a user lookup map
-      const userMap = new Map(users.map((user) => [user.id, user]));
+        // Create a user lookup map
+        const userMap = new Map(users.map((user) => [user.id, user]));
 
-      // Filter eligible admins
-      const eligibleAdmins = admins.filter((admin) =>
-        this.shouldNotifyAdmin(admin, event, data.severity),
-      );
+        // Filter eligible admins
+        const eligibleAdmins = admins.filter((admin) =>
+          this.shouldNotifyAdmin(admin, event, data.severity),
+        );
 
-      if (eligibleAdmins.length === 0) {
-        this.loggingService.debug(
-          'No eligible admins for notification',
+        if (eligibleAdmins.length === 0) {
+          this.loggingService.debug(
+            'No eligible admins for notification',
+            'NotificationsService',
+            { event, severity: data.severity },
+          );
+          return;
+        }
+
+        // Create notification jobs for each eligible admin
+        const jobs: NotificationJob[] = [];
+
+        for (const admin of eligibleAdmins) {
+          const user = userMap.get(admin.userId);
+          if (!user) {
+            this.loggingService.warn(
+              'Admin without corresponding user',
+              'NotificationsService',
+              { adminId: admin.id, userId: admin.userId },
+            );
+            continue;
+          }
+
+          const job: NotificationJob = {
+            adminId: admin.id,
+            event,
+            data: {
+              ...data,
+              adminEmail: user.email,
+              adminName: user.name ?? undefined,
+            },
+            metadata: {
+              timestamp: new Date().toISOString(),
+              priority: data.severity,
+              source,
+              correlationId,
+            },
+          };
+
+          const settings = this.parseNotificationSettings(
+            admin.notificationSettings,
+          );
+
+          try {
+            // Try to use the queue system
+            if (settings.emailFrequency === 'immediate') {
+              await this.queueService.addNotificationJob(job);
+            } else {
+              this.digestProcessor.addToDigest(admin.id, job);
+            }
+
+            jobs.push(job);
+          } catch (queueError) {
+            // If queue system fails (Redis issue) but notification is critical,
+            // flag for emergency delivery
+            if (isCritical) {
+              useEmergency = true;
+              failureError = queueError as Error;
+
+              // Still add to jobs list to track we tried
+              jobs.push(job);
+
+              this.loggingService.warn(
+                'Queue system failure for critical notification, will use emergency channel',
+                'NotificationsService',
+                {
+                  error:
+                    queueError instanceof Error
+                      ? queueError.message
+                      : String(queueError),
+                },
+              );
+            } else {
+              this.loggingService.error(
+                'Failed to queue notification',
+                'NotificationsService',
+                queueError as Error,
+                { adminId: admin.id, event },
+              );
+            }
+          }
+        }
+
+        this.loggingService.info(
+          'Notification triggered',
           'NotificationsService',
-          { event, severity: data.severity },
+          {
+            event,
+            adminCount: jobs.length,
+            severity: data.severity,
+            source,
+          },
+        );
+
+        // If queue failed for critical notifications, use emergency channel
+        if (useEmergency && failureError) {
+          await this.sendEmergencyNotification(
+            event,
+            data,
+            new Error(`Queue system failure: ${failureError.message}`),
+          );
+        }
+      } catch (dbError) {
+        // Database error - fall back to emergency notification
+        // Only send emergency notifications for critical issues
+        if (isCritical) {
+          await this.sendEmergencyNotification(event, data, dbError as Error);
+        } else {
+          // Log but don't send non-critical notifications during DB outage
+          this.loggingService.warn(
+            `Skipping non-critical notification during DB outage: ${event}`,
+            'NotificationsService',
+            { event, severity: data.severity },
+          );
+        }
+      }
+    } catch (error) {
+      // Last-ditch effort for critical notifications if everything else fails
+      if (data.severity === 'critical') {
+        try {
+          await this.sendEmergencyNotification(
+            event,
+            data,
+            new Error(
+              `Catastrophic notification failure: ${error instanceof Error ? error.message : String(error)}`,
+            ),
+          );
+        } catch (emergencyError) {
+          // At this point, we've tried everything
+          this.loggingService.error(
+            'CRITICAL: All notification systems failed',
+            'NotificationsService',
+            emergencyError as Error,
+            { event, severity: data.severity },
+          );
+        }
+      } else {
+        this.loggingService.error(
+          'Failed to trigger notification',
+          'NotificationsService',
+          error as Error,
+          { event, data },
+        );
+      }
+    }
+  }
+
+  /**
+   * Emergency notification method used when database is unavailable
+   */
+  public async sendEmergencyNotification(
+    event: NotificationEventType,
+    data: NotificationEventData,
+    dbError: Error,
+  ): Promise<void> {
+    try {
+      // Get admin emails from cache first
+      let recipientEmails: string[] = [];
+      let adminData: Array<{ email: string; name?: string }> = [];
+
+      // Try to use cache first
+      const cachedAdmins = this.getValidCachedAdminEmails();
+      if (cachedAdmins.length > 0) {
+        adminData = cachedAdmins.map((admin) => ({
+          email: admin.email,
+          name: admin.name,
+        }));
+        recipientEmails = cachedAdmins.map((admin) => admin.email);
+
+        this.loggingService.info(
+          `Using cached admin emails for emergency notification: ${recipientEmails.length} recipients`,
+          'NotificationsService',
+        );
+      } else {
+        // Fall back to emergency emails from env if cache is empty or expired
+        recipientEmails = this.emergencyEmails;
+        adminData = recipientEmails.map((email) => ({ email }));
+
+        this.loggingService.info(
+          `Using fallback emergency emails: ${recipientEmails.length} recipients`,
+          'NotificationsService',
+        );
+      }
+
+      if (recipientEmails.length === 0) {
+        this.loggingService.error(
+          'No fallback admin emails available for emergency notification',
+          'NotificationsService',
+          undefined,
+          { event },
         );
         return;
       }
 
-      // Create notification jobs for each eligible admin
-      const jobs: NotificationJob[] = [];
-
-      for (const admin of eligibleAdmins) {
-        const user = userMap.get(admin.userId);
-        if (!user) {
-          this.loggingService.warn(
-            'Admin without corresponding user',
-            'NotificationsService',
-            { adminId: admin.id, userId: admin.userId },
-          );
-          continue;
-        }
-
-        const job: NotificationJob = {
-          adminId: admin.id,
-          event,
-          data: {
-            ...data,
-            adminEmail: user.email,
-            adminName: user.name ?? undefined,
-          },
-          metadata: {
-            timestamp: new Date().toISOString(),
-            priority: data.severity,
-            source,
-            correlationId,
-          },
-        };
-
-        const settings = this.parseNotificationSettings(
-          admin.notificationSettings,
-        );
-
-        // Route the notification based on admin preferences
-        if (settings.emailFrequency === 'immediate') {
-          await this.queueService.addNotificationJob(job);
-        } else {
-          this.digestProcessor.addToDigest(admin.id, job);
-        }
-
-        jobs.push(job);
-      }
-
-      this.loggingService.info(
-        'Notification triggered',
-        'NotificationsService',
-        {
-          event,
-          adminCount: jobs.length,
-          severity: data.severity,
-          source,
+      // Add DB error information to the notification
+      const enhancedData = {
+        ...data,
+        details: {
+          ...(data.details || {}),
+          dbConnectionError: dbError.message,
+          emergencyNotification: true,
+          timestamp: new Date().toISOString(),
         },
-      );
+      };
+
+      for (const adminInfo of adminData) {
+        try {
+          // Render emergency notification template
+          const { subject, html } =
+            await this.emailTemplateService.renderNotificationEmail(
+              'system-event',
+              event,
+              enhancedData,
+              adminInfo.email,
+              adminInfo.name,
+            );
+
+          // Send email directly via Resend API
+          await this.resend.emails.send({
+            from: this.config.email.fromAddress,
+            to: adminInfo.email,
+            subject: `🚨 EMERGENCY: ${subject}`,
+            html,
+          });
+
+          this.loggingService.info(
+            `Sent emergency notification to ${adminInfo.email}`,
+            'NotificationsService',
+            { event, severity: data.severity },
+          );
+        } catch (emailError) {
+          this.loggingService.error(
+            `Failed to send emergency notification to ${adminInfo.email}`,
+            'NotificationsService',
+            emailError as Error,
+          );
+        }
+      }
     } catch (error) {
       this.loggingService.error(
-        'Failed to trigger notification',
+        'Failed to send emergency notification',
         'NotificationsService',
         error as Error,
-        { event, data },
+        { event },
       );
-      throw error;
     }
   }
 

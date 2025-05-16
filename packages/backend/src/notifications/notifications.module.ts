@@ -10,7 +10,7 @@ import { ErrorHandlingService } from '@/common/error-handling/services/error-han
 import { DigestProcessorService } from './services/digest-processor.service';
 
 @Module({
-  imports: [PrismaModule, RedisModule],
+  imports: [RedisModule, PrismaModule],
   controllers: [AdminNotificationsController],
   providers: [
     NotificationsService,

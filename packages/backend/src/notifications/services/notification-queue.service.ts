@@ -1,5 +1,5 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Queue, Worker } from 'bullmq';
+import { forwardRef, Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Queue } from 'bullmq';
 import { LoggingService } from '@/logging/services/logging.service';
 import { NotificationJob, NotificationPriority } from '@scaffold/types';
 import {

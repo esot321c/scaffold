@@ -1,19 +1,20 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { NotificationsService } from '@/notifications/services/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { RedisService } from '@/redis/services/redis.service';
 import { LoggingService } from '@/logging/services/logging.service';
 import { SystemEventType } from '@scaffold/types';
 import * as os from 'os';
 import * as diskusage from 'diskusage';
+import { NotificationThrottleService } from '@/common/services/notification-throttle.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 interface HealthMetrics {
   cpuUsage: number;
   memoryUsage: number;
   diskUsage: number;
-  databaseConnected: boolean;
-  redisConnected: boolean;
+  // databaseConnected: boolean;
+  // redisConnected: boolean;
   queueBacklog?: number;
 }
 
@@ -27,10 +28,11 @@ export class SystemHealthService implements OnModuleInit {
   private readonly DISK_THRESHOLD = 90; // percentage
 
   constructor(
-    private notificationsService: NotificationsService,
-    private prismaService: PrismaService,
-    private redisService: RedisService,
+    // private prismaService: PrismaService,
+    // private redisService: RedisService,
     private loggingService: LoggingService,
+    private throttleService: NotificationThrottleService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async onModuleInit() {
@@ -54,109 +56,323 @@ export class SystemHealthService implements OnModuleInit {
   }
 
   private async collectMetrics(): Promise<HealthMetrics> {
-    const [cpuUsage, memoryUsage, diskUsage, dbConnected, redisConnected] =
-      await Promise.all([
-        this.getCpuUsage(),
-        this.getMemoryUsage(),
-        this.getDiskUsage(),
-        this.checkDatabaseConnection(),
-        this.checkRedisConnection(),
-      ]);
+    const [
+      cpuUsage,
+      memoryUsage,
+      diskUsage,
+      // dbConnected, redisConnected
+    ] = await Promise.all([
+      this.getCpuUsage(),
+      this.getMemoryUsage(),
+      this.getDiskUsage(),
+      // this.checkDatabaseConnection(),
+      // this.checkRedisConnection(),
+    ]);
 
     return {
       cpuUsage,
       memoryUsage,
       diskUsage,
-      databaseConnected: dbConnected,
-      redisConnected: redisConnected,
+      // databaseConnected: dbConnected,
+      // redisConnected: redisConnected,
     };
   }
-
+  /**
+   * Analyze collected metrics and trigger notifications if needed
+   */
   private async analyzeMetrics(metrics: HealthMetrics) {
-    // Check CPU usage
+    // // Redis connection status - use explicit throttling
+    // if (!metrics.redisConnected && this.lastMetrics?.redisConnected) {
+    //   // Redis connection lost - only notify if not throttled
+    //   if (
+    //     !this.throttleService.shouldThrottle(
+    //       SystemEventType.QUEUE_FAILURE,
+    //       'health-check',
+    //     )
+    //   ) {
+    //     this.emitNotification(
+    //       SystemEventType.QUEUE_FAILURE,
+    //       {
+    //         description:
+    //           'Redis connection has been lost - queue system is unavailable',
+    //         severity: 'critical',
+    //         service: 'redis',
+    //         details: {
+    //           previousState: 'connected',
+    //           currentState: 'disconnected',
+    //           timestamp: new Date().toISOString(),
+    //           source: 'health-check',
+    //         },
+    //       },
+    //       'system-health',
+    //     );
+    //   }
+    // } else if (metrics.redisConnected && !this.lastMetrics?.redisConnected) {
+    //   // Redis connection restored - also throttle recoveries
+    //   if (
+    //     !this.throttleService.shouldThrottle(
+    //       SystemEventType.QUEUE_RECOVERY,
+    //       'health-check',
+    //     )
+    //   ) {
+    //     this.throttleService.resetThrottle(
+    //       SystemEventType.QUEUE_FAILURE,
+    //       'health-check',
+    //     );
+
+    //     this.emitNotification(
+    //       SystemEventType.QUEUE_RECOVERY,
+    //       {
+    //         description:
+    //           'Redis connection has been restored - queue system is back online',
+    //         severity: 'normal',
+    //         service: 'redis',
+    //         details: {
+    //           previousState: 'disconnected',
+    //           currentState: 'connected',
+    //           timestamp: new Date().toISOString(),
+    //           source: 'health-check',
+    //         },
+    //       },
+    //       'system-health',
+    //     );
+    //   }
+    // }
+
+    // // Database connection status - also throttled
+    // if (!metrics.databaseConnected && this.lastMetrics?.databaseConnected) {
+    //   if (
+    //     !this.throttleService.shouldThrottle(
+    //       SystemEventType.DATABASE_CONNECTION_LOST,
+    //       'health-check',
+    //     )
+    //   ) {
+    //     this.emitNotification(
+    //       SystemEventType.DATABASE_CONNECTION_LOST,
+    //       {
+    //         description: 'Database connection has been lost',
+    //         severity: 'critical',
+    //         service: 'database',
+    //         details: {
+    //           previousState: 'connected',
+    //           currentState: 'disconnected',
+    //           timestamp: new Date().toISOString(),
+    //           source: 'health-check',
+    //         },
+    //       },
+    //       'system-health',
+    //     );
+    //   }
+    // } else if (
+    //   metrics.databaseConnected &&
+    //   !this.lastMetrics?.databaseConnected
+    // ) {
+    //   if (
+    //     !this.throttleService.shouldThrottle(
+    //       SystemEventType.DATABASE_CONNECTION_RESTORED,
+    //       'health-check',
+    //     )
+    //   ) {
+    //     this.throttleService.resetThrottle(
+    //       SystemEventType.DATABASE_CONNECTION_LOST,
+    //       'health-check',
+    //     );
+
+    //     this.emitNotification(
+    //       SystemEventType.DATABASE_CONNECTION_RESTORED,
+    //       {
+    //         description: 'Database connection has been restored',
+    //         severity: 'normal',
+    //         service: 'database',
+    //         details: {
+    //           previousState: 'disconnected',
+    //           currentState: 'connected',
+    //           timestamp: new Date().toISOString(),
+    //           source: 'health-check',
+    //         },
+    //       },
+    //       'system-health',
+    //     );
+    //   }
+    // }
+
+    // CPU usage
     if (metrics.cpuUsage > this.CPU_THRESHOLD) {
-      await this.notificationsService.triggerNotification(
-        SystemEventType.CPU_USAGE_HIGH,
-        {
-          description: `CPU usage is critically high at ${metrics.cpuUsage.toFixed(1)}%`,
-          severity: metrics.cpuUsage > 90 ? 'critical' : 'high',
-          metric: metrics.cpuUsage,
-          threshold: this.CPU_THRESHOLD,
-          service: 'system',
-        },
-        'system-health',
-      );
-    }
+      const severity = metrics.cpuUsage > 90 ? 'critical' : 'high';
+      const eventType = SystemEventType.CPU_USAGE_HIGH;
 
-    // Check memory usage
-    if (metrics.memoryUsage > this.MEMORY_THRESHOLD) {
-      await this.notificationsService.triggerNotification(
-        SystemEventType.MEMORY_USAGE_HIGH,
-        {
-          description: `Memory usage is critically high at ${metrics.memoryUsage.toFixed(1)}%`,
-          severity: metrics.memoryUsage > 95 ? 'critical' : 'high',
-          metric: metrics.memoryUsage,
-          threshold: this.MEMORY_THRESHOLD,
-          service: 'system',
-        },
-        'system-health',
-      );
-    }
-
-    // Check disk usage
-    if (metrics.diskUsage > this.DISK_THRESHOLD) {
-      await this.notificationsService.triggerNotification(
-        SystemEventType.DISK_SPACE_LOW,
-        {
-          description: `Disk usage is critically high at ${metrics.diskUsage.toFixed(1)}%`,
-          severity: metrics.diskUsage > 95 ? 'critical' : 'high',
-          metric: metrics.diskUsage,
-          threshold: this.DISK_THRESHOLD,
-          service: 'system',
-        },
-        'system-health',
-      );
-    }
-
-    // Check database connection
-    if (!metrics.databaseConnected && this.lastMetrics?.databaseConnected) {
-      await this.notificationsService.triggerNotification(
-        SystemEventType.DATABASE_CONNECTION_LOST,
-        {
-          description: 'Database connection has been lost',
-          severity: 'critical',
-          service: 'database',
-        },
-        'system-health',
-      );
+      if (!this.throttleService.shouldThrottle(eventType, `cpu-${severity}`)) {
+        this.emitNotification(
+          eventType,
+          {
+            description: `CPU usage is critically high at ${metrics.cpuUsage.toFixed(1)}%`,
+            severity,
+            metric: metrics.cpuUsage,
+            threshold: this.CPU_THRESHOLD,
+            service: 'system',
+          },
+          'system-health',
+        );
+      }
     } else if (
-      metrics.databaseConnected &&
-      !this.lastMetrics?.databaseConnected
+      this.lastMetrics?.cpuUsage &&
+      this.lastMetrics?.cpuUsage > this.CPU_THRESHOLD &&
+      metrics.cpuUsage <= this.CPU_THRESHOLD
     ) {
-      await this.notificationsService.triggerNotification(
-        SystemEventType.DATABASE_CONNECTION_RESTORED,
-        {
-          description: 'Database connection has been restored',
-          severity: 'normal',
-          service: 'database',
-        },
-        'system-health',
-      );
+      // CPU usage recovery
+      if (
+        !this.throttleService.shouldThrottle(
+          SystemEventType.CPU_USAGE_NORMAL,
+          'cpu',
+        )
+      ) {
+        this.throttleService.resetThrottle(
+          SystemEventType.CPU_USAGE_HIGH,
+          'cpu-high',
+        );
+        this.throttleService.resetThrottle(
+          SystemEventType.CPU_USAGE_HIGH,
+          'cpu-critical',
+        );
+
+        this.emitNotification(
+          SystemEventType.CPU_USAGE_NORMAL,
+          {
+            description: `CPU usage has returned to normal: ${metrics.cpuUsage.toFixed(1)}%`,
+            severity: 'normal',
+            metric: metrics.cpuUsage,
+            threshold: this.CPU_THRESHOLD,
+            service: 'system',
+          },
+          'system-health',
+        );
+      }
     }
 
-    // Check Redis connection
-    if (!metrics.redisConnected && this.lastMetrics?.redisConnected) {
-      await this.notificationsService.triggerNotification(
-        SystemEventType.QUEUE_FAILURE,
-        {
-          description:
-            'Redis connection has been lost - queue system may be affected',
-          severity: 'high',
-          service: 'redis',
-        },
-        'system-health',
-      );
+    // Memory usage
+    if (metrics.memoryUsage > this.MEMORY_THRESHOLD) {
+      const severity = metrics.memoryUsage > 95 ? 'critical' : 'high';
+      const eventType = SystemEventType.MEMORY_USAGE_HIGH;
+
+      if (
+        !this.throttleService.shouldThrottle(eventType, `memory-${severity}`)
+      ) {
+        this.emitNotification(
+          eventType,
+          {
+            description: `Memory usage is critically high at ${metrics.memoryUsage.toFixed(1)}%`,
+            severity,
+            metric: metrics.memoryUsage,
+            threshold: this.MEMORY_THRESHOLD,
+            service: 'system',
+          },
+          'system-health',
+        );
+      }
+    } else if (
+      this.lastMetrics?.memoryUsage &&
+      this.lastMetrics?.memoryUsage > this.MEMORY_THRESHOLD &&
+      metrics.memoryUsage <= this.MEMORY_THRESHOLD
+    ) {
+      // Memory usage recovery
+      if (
+        !this.throttleService.shouldThrottle(
+          SystemEventType.MEMORY_USAGE_NORMAL,
+          'memory',
+        )
+      ) {
+        this.throttleService.resetThrottle(
+          SystemEventType.MEMORY_USAGE_HIGH,
+          'memory-high',
+        );
+        this.throttleService.resetThrottle(
+          SystemEventType.MEMORY_USAGE_HIGH,
+          'memory-critical',
+        );
+
+        this.emitNotification(
+          SystemEventType.MEMORY_USAGE_NORMAL,
+          {
+            description: `Memory usage has returned to normal: ${metrics.memoryUsage.toFixed(1)}%`,
+            severity: 'normal',
+            metric: metrics.memoryUsage,
+            threshold: this.MEMORY_THRESHOLD,
+            service: 'system',
+          },
+          'system-health',
+        );
+      }
     }
+
+    // Disk space
+    if (metrics.diskUsage > this.DISK_THRESHOLD) {
+      const severity = metrics.diskUsage > 95 ? 'critical' : 'high';
+      const eventType = SystemEventType.DISK_SPACE_LOW;
+
+      if (!this.throttleService.shouldThrottle(eventType, `disk-${severity}`)) {
+        this.emitNotification(
+          eventType,
+          {
+            description: `Disk usage is critically high at ${metrics.diskUsage.toFixed(1)}%`,
+            severity,
+            metric: metrics.diskUsage,
+            threshold: this.DISK_THRESHOLD,
+            service: 'system',
+          },
+          'system-health',
+        );
+      }
+    } else if (
+      this.lastMetrics?.diskUsage &&
+      this.lastMetrics?.diskUsage > this.DISK_THRESHOLD &&
+      metrics.diskUsage <= this.DISK_THRESHOLD
+    ) {
+      // Disk usage recovery
+      if (
+        !this.throttleService.shouldThrottle(
+          SystemEventType.DISK_SPACE_NORMAL,
+          'disk',
+        )
+      ) {
+        this.throttleService.resetThrottle(
+          SystemEventType.DISK_SPACE_LOW,
+          'disk-high',
+        );
+        this.throttleService.resetThrottle(
+          SystemEventType.DISK_SPACE_LOW,
+          'disk-critical',
+        );
+
+        this.emitNotification(
+          SystemEventType.DISK_SPACE_NORMAL,
+          {
+            description: `Disk usage has returned to normal: ${metrics.diskUsage.toFixed(1)}%`,
+            severity: 'normal',
+            metric: metrics.diskUsage,
+            threshold: this.DISK_THRESHOLD,
+            service: 'system',
+          },
+          'system-health',
+        );
+      }
+    }
+  }
+
+  /**
+   * Helper method to emit notification events
+   */
+  private emitNotification(
+    type: SystemEventType,
+    data: any,
+    source: string = 'system-health',
+    correlationId?: string,
+  ) {
+    this.eventEmitter.emit('notification.send', {
+      type,
+      data,
+      source,
+      correlationId,
+    });
   }
 
   private async getCpuUsage(): Promise<number> {
@@ -201,32 +417,13 @@ export class SystemHealthService implements OnModuleInit {
     }
   }
 
-  private async checkDatabaseConnection(): Promise<boolean> {
-    try {
-      await this.prismaService.$queryRaw`SELECT 1`;
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  private async checkRedisConnection(): Promise<boolean> {
-    try {
-      const client = this.redisService.getConnection();
-      await client.ping();
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
   // Track error rates for high error detection
   @Cron(CronExpression.EVERY_MINUTE)
   async checkErrorRates() {
     const errorCount = this.getRecentErrorCount();
 
     if (errorCount > this.ERROR_THRESHOLD) {
-      await this.notificationsService.triggerNotification(
+      this.emitNotification(
         SystemEventType.HIGH_ERROR_RATE,
         {
           description: `Error rate is high with ${errorCount} errors in the last minute`,
@@ -270,7 +467,7 @@ export class SystemHealthService implements OnModuleInit {
 
   // Method to manually trigger a service down notification
   async reportServiceDown(serviceName: string, details?: any) {
-    await this.notificationsService.triggerNotification(
+    this.emitNotification(
       SystemEventType.SERVICE_DOWN,
       {
         description: `Service '${serviceName}' is down`,
@@ -284,7 +481,7 @@ export class SystemHealthService implements OnModuleInit {
 
   // Method to report critical errors
   async reportCriticalError(error: Error, context: string) {
-    await this.notificationsService.triggerNotification(
+    this.emitNotification(
       SystemEventType.CRITICAL_ERROR,
       {
         description: `Critical error in ${context}: ${error.message}`,

@@ -22,18 +22,33 @@ import { MongoDBModule } from './mongodb/mongodb.module';
 import { LogsController } from './admin/controllers/logs.controller';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
-    CommonModule,
+    // Core infrastructure modules first
     AppConfigModule,
+
+    // Event emitter should be early for the notification system
+    EventEmitterModule.forRoot(), // Add this if not imported elsewhere globally
+
+    // Common modules that provide shared services
+    CommonModule,
+
+    // Database and storage modules
     MongoDBModule,
-    LoggingModule,
     PrismaModule,
     RedisModule,
+
+    // Logging module that depends on databases
+    LoggingModule,
+
+    // Feature modules
     AuthModule,
     UsersModule,
     AdminModule,
+
+    // System monitoring modules last as they may depend on all other modules
     NotificationsModule,
     MonitoringModule,
   ],

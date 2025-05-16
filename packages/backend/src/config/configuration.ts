@@ -32,6 +32,9 @@ export class AppConfig {
     return {
       resendApiKey: this.configService.get('RESEND_API_KEY', { infer: true }),
       fromAddress: this.configService.get('FROM_ADDRESS', { infer: true }),
+      emergencyAdminEmails: this.configService.get('EMERGENCY_ADMIN_EMAILS', {
+        infer: true,
+      }),
     };
   }
 

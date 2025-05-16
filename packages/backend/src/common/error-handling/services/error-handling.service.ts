@@ -10,7 +10,6 @@ export class ErrorHandlingService {
     name?: string;
     message?: string;
   }): boolean {
-    console.log('resend error: ', error);
     // No error object at all
     if (!error) {
       return false;

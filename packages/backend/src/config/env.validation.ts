@@ -29,6 +29,7 @@ export const validationSchema = z.object({
   // Email
   RESEND_API_KEY: z.string(),
   FROM_ADDRESS: z.string().email(),
+  EMERGENCY_ADMIN_EMAILS: z.string(), // not .email() because it's a comma separated list of emails
 
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
