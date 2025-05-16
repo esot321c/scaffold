@@ -77,6 +77,9 @@ importers:
       '@prisma/client':
         specifier: ^6.7.0
         version: 6.7.0(prisma@6.7.0(typescript@5.8.3))(typescript@5.8.3)
+      '@scaffold/timezone-utils':
+        specifier: workspace:*
+        version: link:../timezone-utils
       '@scaffold/types':
         specifier: workspace:*
         version: link:../types
@@ -255,6 +258,9 @@ importers:
       '@radix-ui/react-tabs':
         specifier: ^1.1.11
         version: 1.1.11(@types/react-dom@19.1.2(@types/react@19.1.2))(@types/react@19.1.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@scaffold/timezone-utils':
+        specifier: workspace:*
+        version: link:../timezone-utils
       '@scaffold/types':
         specifier: workspace:*
         version: link:../types
@@ -346,6 +352,12 @@ importers:
       web-vitals:
         specifier: ^4.2.4
         version: 4.2.4
+
+  packages/timezone-utils:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.3
 
   packages/types: {}
 

@@ -10,6 +10,7 @@ import type {
 import { AuthEventType, SystemEventType } from '@scaffold/types';
 import { EMAIL_TEMPLATES } from '../constants/notification.constants';
 import { LoggingService } from '@/logging/services/logging.service';
+import { formatTimeZoneDisplay } from '@scaffold/timezone-utils';
 
 interface EmailTemplateContext {
   adminName?: string;
@@ -33,6 +34,30 @@ export class EmailTemplateService {
   constructor(private loggingService: LoggingService) {}
 
   async onModuleInit() {
+    // Register helper for date formatting
+    handlebars.registerHelper('formatDate', (timestamp) => {
+      try {
+        return new Date(timestamp).toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      } catch (e) {
+        return 'Invalid date';
+      }
+    });
+
+    handlebars.registerHelper('formatTimestamp', (timestamp, timezone) => {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-US', {
+        timeZone: timezone,
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+    });
+
     await this.compileTemplates();
   }
 
@@ -214,35 +239,75 @@ export class EmailTemplateService {
     return `${baseUrl}/admin`;
   }
 
-  // Helper for digest emails
-  // async renderDigestEmail(
-  //   jobs: NotificationJob[],
-  //   adminEmail: string,
-  //   adminName?: string,
-  // ): Promise<{ subject: string; html: string }> {
-  //   const template = this.compiledTemplates.get(EMAIL_TEMPLATES.DIGEST);
-  //   if (!template) {
-  //     throw new Error('Digest template not found');
-  //   }
+  async renderDigestEmail(
+    jobs: NotificationJob[],
+    adminEmail: string,
+    adminName?: string,
+    adminTimezone: string = 'UTC',
+  ): Promise<{ subject: string; html: string }> {
+    const template = this.compiledTemplates.get(EMAIL_TEMPLATES.DIGEST);
+    if (!template) {
+      throw new Error('Digest template not found');
+    }
 
-  //   const groupedEvents = this.groupEventsByType(jobs);
-  //   const summary = this.calculateSummary(jobs);
+    // Format jobs with timezone-aware timestamps
+    const enhancedJobs = jobs.map((job) => ({
+      ...job,
+      formattedTime: this.formatEventTime(
+        job.metadata.timestamp,
+        adminTimezone,
+      ),
+    }));
 
-  //   const context = {
-  //     adminName,
-  //     period: this.getDigestPeriod(jobs),
-  //     groupedEvents,
-  //     summary,
-  //     unsubscribeUrl: `${process.env.FRONTEND_URL}/admin/notification-settings`,
-  //     appName: 'Scaffold',
-  //     totalEvents: jobs.length,
-  //   };
+    const groupedEvents = this.groupEventsByType(enhancedJobs);
+    const summary = this.calculateSummary(enhancedJobs);
+    const period = this.getDigestPeriod(enhancedJobs);
 
-  //   const html = template(context);
-  //   const subject = `Scaffold Admin Digest - ${summary.critical} critical, ${summary.high} high priority events`;
+    const context = {
+      adminName,
+      period,
+      groupedEvents,
+      summary,
+      unsubscribeUrl: `${process.env.FRONTEND_URL}/admin/notification-settings`,
+      adminPanelUrl: `${process.env.FRONTEND_URL}/admin/logs`,
+      appName: 'Scaffold',
+      totalEvents: jobs.length,
+      supportEmail: process.env.SUPPORT_EMAIL || 'support@scaffold.app',
+      currentYear: new Date().getFullYear(),
+    };
 
-  //   return { subject, html };
-  // }
+    const html = template(context);
+
+    // Construct a subject line based on the summary
+    let subject = 'Scaffold Admin Digest';
+
+    if (summary.critical > 0 || summary.high > 0) {
+      subject = `${subject}: ${summary.critical} critical, ${summary.high} high priority events`;
+    } else if (summary.total > 0) {
+      subject = `${subject}: ${summary.total} event${summary.total !== 1 ? 's' : ''}`;
+    }
+
+    return { subject, html };
+  }
+
+  // Helper method to format a timestamp
+  private formatEventTime(timestamp: string, timezone: string): string {
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+    } catch (error) {
+      console.error('Error formatting timestamp:', error);
+      return timestamp; // Return the original timestamp if formatting fails
+    }
+  }
 
   private groupEventsByType(
     jobs: NotificationJob[],

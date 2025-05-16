@@ -22,6 +22,7 @@ import { Route as ProfileSecurityIndexImport } from './routes/profile/security/i
 import { Route as AdminUsersIndexImport } from './routes/admin/users/index'
 import { Route as AdminSettingsIndexImport } from './routes/admin/settings/index'
 import { Route as AdminLogsIndexImport } from './routes/admin/logs/index'
+import { Route as AdminSettingsNotificationsIndexImport } from './routes/admin/settings/notifications/index'
 
 // Create/Update Routes
 
@@ -90,6 +91,13 @@ const AdminLogsIndexRoute = AdminLogsIndexImport.update({
   path: '/logs/',
   getParentRoute: () => AdminRoute,
 } as any)
+
+const AdminSettingsNotificationsIndexRoute =
+  AdminSettingsNotificationsIndexImport.update({
+    id: '/settings/notifications/',
+    path: '/settings/notifications/',
+    getParentRoute: () => AdminRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -172,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileSecurityIndexImport
       parentRoute: typeof rootRoute
     }
+    '/admin/settings/notifications/': {
+      id: '/admin/settings/notifications/'
+      path: '/settings/notifications'
+      fullPath: '/admin/settings/notifications'
+      preLoaderRoute: typeof AdminSettingsNotificationsIndexImport
+      parentRoute: typeof AdminImport
+    }
   }
 }
 
@@ -182,6 +197,7 @@ interface AdminRouteChildren {
   AdminLogsIndexRoute: typeof AdminLogsIndexRoute
   AdminSettingsIndexRoute: typeof AdminSettingsIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
+  AdminSettingsNotificationsIndexRoute: typeof AdminSettingsNotificationsIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -189,6 +205,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLogsIndexRoute: AdminLogsIndexRoute,
   AdminSettingsIndexRoute: AdminSettingsIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
+  AdminSettingsNotificationsIndexRoute: AdminSettingsNotificationsIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -205,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
   '/profile/security': typeof ProfileSecurityIndexRoute
+  '/admin/settings/notifications': typeof AdminSettingsNotificationsIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -218,6 +236,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
   '/profile/security': typeof ProfileSecurityIndexRoute
+  '/admin/settings/notifications': typeof AdminSettingsNotificationsIndexRoute
 }
 
 export interface FileRoutesById {
@@ -233,6 +252,7 @@ export interface FileRoutesById {
   '/admin/settings/': typeof AdminSettingsIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
   '/profile/security/': typeof ProfileSecurityIndexRoute
+  '/admin/settings/notifications/': typeof AdminSettingsNotificationsIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -249,6 +269,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/profile/security'
+    | '/admin/settings/notifications'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -261,6 +282,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/profile/security'
+    | '/admin/settings/notifications'
   id:
     | '__root__'
     | '/'
@@ -274,6 +296,7 @@ export interface FileRouteTypes {
     | '/admin/settings/'
     | '/admin/users/'
     | '/profile/security/'
+    | '/admin/settings/notifications/'
   fileRoutesById: FileRoutesById
 }
 
@@ -325,7 +348,8 @@ export const routeTree = rootRoute
         "/admin/",
         "/admin/logs/",
         "/admin/settings/",
-        "/admin/users/"
+        "/admin/users/",
+        "/admin/settings/notifications/"
       ]
     },
     "/auth/success": {
@@ -358,6 +382,10 @@ export const routeTree = rootRoute
     },
     "/profile/security/": {
       "filePath": "profile/security/index.tsx"
+    },
+    "/admin/settings/notifications/": {
+      "filePath": "admin/settings/notifications/index.tsx",
+      "parent": "/admin"
     }
   }
 }

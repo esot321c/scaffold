@@ -5,7 +5,6 @@ import type { ApiStatus } from '@scaffold/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/utils/api-client';
 
-// Define activity stats interface
 interface ActivityStats {
   totalUsers: number;
   activeUsers24h: number;

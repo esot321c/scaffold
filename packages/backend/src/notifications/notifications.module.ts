@@ -7,6 +7,7 @@ import { NotificationProcessor } from './processors/notification.processor';
 import { AdminNotificationsController } from './controllers/admin-notifications.controller';
 import { RedisModule } from '@/redis/redis.module';
 import { ErrorHandlingService } from '@/common/error-handling/services/error-handling.service';
+import { DigestProcessorService } from './services/digest-processor.service';
 
 @Module({
   imports: [PrismaModule, RedisModule],
@@ -17,6 +18,7 @@ import { ErrorHandlingService } from '@/common/error-handling/services/error-han
     EmailTemplateService,
     NotificationProcessor,
     ErrorHandlingService,
+    DigestProcessorService,
   ],
   exports: [NotificationsService],
 })

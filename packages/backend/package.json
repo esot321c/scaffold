@@ -30,6 +30,7 @@
     "@paralleldrive/cuid2": "^2.2.2",
     "@prisma/client": "^6.7.0",
     "@scaffold/types": "workspace:*",
+    "@scaffold/timezone-utils": "workspace:*",
     "bullmq": "^5.52.2",
     "cache-manager": "^6.4.2",
     "cache-manager-redis-store": "^3.0.1",

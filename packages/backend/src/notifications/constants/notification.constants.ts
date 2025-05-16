@@ -67,7 +67,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS: AdminNotificationSettings = {
 export const EMAIL_TEMPLATES = {
   AUTH_EVENT: 'auth-event',
   SYSTEM_EVENT: 'system-event',
-  // DIGEST: 'digest',
+  DIGEST: 'digest',
   // TEST: 'test-notification',
 } as const;
 

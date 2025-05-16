@@ -1,0 +1,138 @@
+{{> header}}
+<div class="content">
+  <h2>Admin Notification Digest</h2>
+  
+  <div class="summary-box">
+    <h3>Summary for {{period}}</h3>
+    <div class="summary-stats">
+      {{#if summary.critical}}
+      <div class="stat-item critical">
+        <span class="stat-number">{{summary.critical}}</span>
+        <span class="stat-label">Critical</span>
+      </div>
+      {{/if}}
+      {{#if summary.high}}
+      <div class="stat-item high">
+        <span class="stat-number">{{summary.high}}</span>
+        <span class="stat-label">High</span>
+      </div>
+      {{/if}}
+      {{#if summary.normal}}
+      <div class="stat-item normal">
+        <span class="stat-number">{{summary.normal}}</span>
+        <span class="stat-label">Normal</span>
+      </div>
+      {{/if}}
+      {{#if summary.low}}
+      <div class="stat-item low">
+        <span class="stat-number">{{summary.low}}</span>
+        <span class="stat-label">Low</span>
+      </div>
+      {{/if}}
+    </div>
+  </div>
+
+  {{#if groupedEvents}}
+    {{#each groupedEvents as |events eventType|}}
+      <div class="event-section">
+        <h3>{{eventType}} ({{events.length}})</h3>
+        <table class="events-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Severity</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each events as |event|}}
+              <tr class="severity-{{event.data.severity}}">
+                <td>{{formatTimestamp event.metadata.timestamp adminTimezone}}</td>
+                <td>{{event.data.severity}}</td>
+                <td>{{event.data.description}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    {{/each}}
+  {{else}}
+    <p>No events occurred during this period.</p>
+  {{/if}}
+
+  <p style="text-align: center; margin: 20px 0;">
+    <a href="{{adminPanelUrl}}" class="button">View All Events in Admin Panel</a>
+  </p>
+</div>
+
+<style>
+  .summary-box {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+  .summary-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+  }
+  .stat-item {
+    text-align: center;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  .stat-number {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+  }
+  .stat-label {
+    font-size: 14px;
+  }
+  .critical {
+    background-color: #ffebee;
+    color: #c62828;
+  }
+  .high {
+    background-color: #fff3e0;
+    color: #e65100;
+  }
+  .normal {
+    background-color: #e3f2fd;
+    color: #0277bd;
+  }
+  .low {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+  .events-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+  }
+  .events-table th, .events-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .events-table th {
+    background-color: #f8f9fa;
+  }
+  .event-section {
+    margin-bottom: 25px;
+  }
+  .severity-critical {
+    background-color: #ffebee;
+  }
+  .severity-high {
+    background-color: #fff3e0;
+  }
+  .severity-normal {
+    background-color: #e3f2fd;
+  }
+  .severity-low {
+    background-color: #e8f5e9;
+  }
+</style>
+{{> footer}}

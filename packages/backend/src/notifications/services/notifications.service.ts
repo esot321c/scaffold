@@ -12,6 +12,7 @@ import {
 import { DEFAULT_NOTIFICATION_SETTINGS } from '../constants/notification.constants';
 import { toZonedTime } from 'date-fns-tz';
 import { Admin } from '@/generated/prisma';
+import { DigestProcessorService } from './digest-processor.service';
 
 @Injectable()
 export class NotificationsService {
@@ -19,6 +20,7 @@ export class NotificationsService {
     private prisma: PrismaService,
     private loggingService: LoggingService,
     private queueService: NotificationQueueService,
+    private digestProcessor: DigestProcessorService,
   ) {}
 
   async triggerNotification(
@@ -28,9 +30,23 @@ export class NotificationsService {
     correlationId?: string,
   ): Promise<void> {
     try {
-      // Get all admins with their notification settings
+      // Get all admins
       const admins = await this.prisma.admin.findMany();
 
+      // Get all relevant users in a single query
+      const userIds = admins.map((admin) => admin.userId);
+      const users = await this.prisma.user.findMany({
+        where: {
+          id: {
+            in: userIds,
+          },
+        },
+      });
+
+      // Create a user lookup map
+      const userMap = new Map(users.map((user) => [user.id, user]));
+
+      // Filter eligible admins
       const eligibleAdmins = admins.filter((admin) =>
         this.shouldNotifyAdmin(admin, event, data.severity),
       );
@@ -44,48 +60,49 @@ export class NotificationsService {
         return;
       }
 
-      // Get user details for eligible admins
-      const userIds = eligibleAdmins.map((admin) => admin.userId);
-      const users = await this.prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: { id: true, email: true, name: true },
-      });
+      // Create notification jobs for each eligible admin
+      const jobs: NotificationJob[] = [];
 
-      const userMap = new Map(users.map((u) => [u.id, u]));
+      for (const admin of eligibleAdmins) {
+        const user = userMap.get(admin.userId);
+        if (!user) {
+          this.loggingService.warn(
+            'Admin without corresponding user',
+            'NotificationsService',
+            { adminId: admin.id, userId: admin.userId },
+          );
+          continue;
+        }
 
-      // Create notification jobs with user data
-      const jobs: NotificationJob[] = eligibleAdmins
-        .map((admin) => {
-          const user = userMap.get(admin.userId);
-          if (!user) {
-            this.loggingService.warn(
-              'Admin without corresponding user',
-              'NotificationsService',
-              { adminId: admin.id, userId: admin.userId },
-            );
-            return null;
-          }
+        const job: NotificationJob = {
+          adminId: admin.id,
+          event,
+          data: {
+            ...data,
+            adminEmail: user.email,
+            adminName: user.name ?? undefined,
+          },
+          metadata: {
+            timestamp: new Date().toISOString(),
+            priority: data.severity,
+            source,
+            correlationId,
+          },
+        };
 
-          return {
-            adminId: admin.id,
-            event,
-            data: {
-              ...data,
-              adminEmail: user.email, // Add email to data for processor
-              adminName: user.name,
-            },
-            metadata: {
-              timestamp: new Date().toISOString(),
-              priority: data.severity,
-              source,
-              correlationId,
-            },
-          };
-        })
-        .filter((job) => job !== null) as NotificationJob[];
+        const settings = this.parseNotificationSettings(
+          admin.notificationSettings,
+        );
 
-      // Add to queue
-      await this.queueService.addBulkNotificationJobs(jobs);
+        // Route the notification based on admin preferences
+        if (settings.emailFrequency === 'immediate') {
+          await this.queueService.addNotificationJob(job);
+        } else {
+          this.digestProcessor.addToDigest(admin.id, job);
+        }
+
+        jobs.push(job);
+      }
 
       this.loggingService.info(
         'Notification triggered',
@@ -162,11 +179,21 @@ export class NotificationsService {
     if (!settings.quietHours?.enabled) return false;
 
     const now = new Date();
-    const timezone = settings.quietHours.timezone || 'UTC';
-    const zonedTime = toZonedTime(now, timezone);
+    const timezone = settings.quietHours.timezone ?? 'UTC';
 
-    const currentHour = zonedTime.getHours();
-    const currentMinute = zonedTime.getMinutes();
+    // Format the date in the admin's timezone
+    const zonedTimeString = now.toLocaleString('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    });
+
+    // Extract hours and minutes
+    const [hoursStr, minutesStr] = zonedTimeString.split(':');
+    const currentHour = parseInt(hoursStr, 10);
+    const currentMinute = parseInt(minutesStr, 10);
+
     const currentTimeValue = currentHour * 60 + currentMinute;
 
     const [startHour, startMinute] = settings.quietHours.start

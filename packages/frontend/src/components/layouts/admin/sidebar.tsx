@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { Activity, LogOut, Settings, Users } from 'lucide-react';
+import { Activity, Bell, LogOut, Settings, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 
@@ -11,11 +11,7 @@ export function AdminSidebar() {
   };
 
   return (
-    <div className="bg-muted/40 border-r flex flex-col">
-      <div className="p-4 border-b">
-        <h2 className="font-semibold">Admin</h2>
-      </div>
-
+    <div className="border-r flex flex-col">
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
           <li>
@@ -54,9 +50,20 @@ export function AdminSidebar() {
               to="/admin/settings"
               className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"
               activeProps={{ className: 'bg-muted' }}
+              activeOptions={{ exact: true }}
             >
               <Settings size={16} />
               <span>System Config</span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/admin/settings/notifications"
+              className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"
+              activeProps={{ className: 'bg-muted' }}
+            >
+              <Bell size={16} />
+              <span>Notifications</span>
             </Link>
           </li>
         </ul>
