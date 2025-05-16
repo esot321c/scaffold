@@ -97,3 +97,10 @@ export interface EmailTemplateData {
   actionUrl?: string;
   unsubscribeUrl: string;
 }
+
+export interface NotificationEvent {
+  type: NotificationEventType;
+  data: NotificationEventData;
+  source: string;
+  correlationId?: string;
+}

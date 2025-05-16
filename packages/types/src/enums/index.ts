@@ -37,11 +37,15 @@ export enum SystemEventType {
   // Queue system
   QUEUE_FAILURE = 'queue_failure',
   QUEUE_BACKED_UP = 'queue_backed_up',
+  QUEUE_RECOVERY = 'queue_recovered',
 
   // System resources
   DISK_SPACE_LOW = 'disk_space_low',
+  DISK_SPACE_NORMAL = 'disk_space_normal',
   MEMORY_USAGE_HIGH = 'memory_usage_high',
+  MEMORY_USAGE_NORMAL = 'memory_usage_normal',
   CPU_USAGE_HIGH = 'cpu_usage_high',
+  CPU_USAGE_NORMAL = 'cpu_usage_normal',
 
   // API
   API_RATE_LIMIT_EXCEEDED = 'api_rate_limit_exceeded',
