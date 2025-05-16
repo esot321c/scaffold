@@ -18,8 +18,6 @@ The latest version introduces a comprehensive health monitoring and notification
 - **Event-driven Architecture**: Decoupled monitoring and notification components with standardized events
 - **Service Resilience**: Multiple fallback mechanisms ensure critical alerts are delivered even during partial outages
 
-![Admin Notification Interface](https://i.imgur.com/example-notification-ui.png)
-
 ## System Architecture
 
 Scaffold uses an event-driven architecture for health monitoring and notifications:
@@ -82,6 +80,8 @@ Scaffold uses an event-driven architecture for health monitoring and notificatio
 - **Event-Driven Monitoring**: The system uses an event-driven architecture for health monitoring and notifications, allowing for loose coupling between components and easier extension with new monitoring capabilities. Events flow through a central event bus, with standardized formats ensuring consistent processing regardless of the event source.
 - **Tiered Notification Strategy**: Notifications are delivered through a tiered strategy: immediate critical alerts, hourly digests for important but non-urgent issues, and daily summaries for routine information. This ensures attention is appropriately directed based on severity.
 - **Resilient Communication Paths**: The notification system is designed with multiple fallback paths to ensure critical alerts are delivered even during partial system outages. This includes cached admin contact information and dedicated emergency channels.
+- **BullMQ for Job Processing**: The notification system leverages BullMQ (backed by Redis) for reliable background job processing. This provides guaranteed delivery of notifications, rate limiting, automatic retries, and concurrency control. Jobs are persisted in Redis, ensuring notification delivery even if the application restarts during processing.
+- **Resend for Email Delivery**: For reliable email communication, Scaffold integrates Resend as the transactional email provider. This modern API-based platform offers high deliverability rates, detailed delivery tracking, and template management. Resend also provides easy integration with our notification templates and priority handling for critical alerts.
 
 ## Quick Start
 
