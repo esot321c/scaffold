@@ -67,6 +67,12 @@ export class NotificationsService implements OnModuleInit {
 
   @OnEvent('notification.send')
   async handleNotificationEvent(payload: NotificationEvent) {
+    this.loggingService.info(
+      `Received notification event: ${payload.type} from ${payload.source}`,
+      'NotificationsService',
+      { payload: JSON.stringify(payload) },
+    );
+
     return this.triggerNotification(
       payload.type,
       payload.data,

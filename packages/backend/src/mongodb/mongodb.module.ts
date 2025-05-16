@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongoDBHealthService } from './services/mongodb-health.service';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       },
     }),
   ],
-  exports: [MongooseModule],
+  providers: [MongoDBHealthService],
+  exports: [MongooseModule, MongoDBHealthService],
 })
 export class MongoDBModule {}

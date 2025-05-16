@@ -1,21 +1,16 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '@/prisma/prisma.service';
-import { RedisService } from '@/redis/services/redis.service';
-import { LoggingService } from '@/logging/services/logging.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotificationThrottleService } from '@/common/services/notification-throttle.service';
 import { SystemEventType } from '@scaffold/types';
+import { LoggingService } from '@/logging/services/logging.service';
 import * as os from 'os';
 import * as diskusage from 'diskusage';
-import { NotificationThrottleService } from '@/common/services/notification-throttle.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 
 interface HealthMetrics {
   cpuUsage: number;
   memoryUsage: number;
   diskUsage: number;
-  // databaseConnected: boolean;
-  // redisConnected: boolean;
-  queueBacklog?: number;
 }
 
 @Injectable()
@@ -28,11 +23,9 @@ export class SystemHealthService implements OnModuleInit {
   private readonly DISK_THRESHOLD = 90; // percentage
 
   constructor(
-    // private prismaService: PrismaService,
-    // private redisService: RedisService,
-    private loggingService: LoggingService,
     private throttleService: NotificationThrottleService,
     private eventEmitter: EventEmitter2,
+    private loggingService: LoggingService,
   ) {}
 
   async onModuleInit() {
@@ -56,146 +49,23 @@ export class SystemHealthService implements OnModuleInit {
   }
 
   private async collectMetrics(): Promise<HealthMetrics> {
-    const [
-      cpuUsage,
-      memoryUsage,
-      diskUsage,
-      // dbConnected, redisConnected
-    ] = await Promise.all([
+    const [cpuUsage, memoryUsage, diskUsage] = await Promise.all([
       this.getCpuUsage(),
       this.getMemoryUsage(),
       this.getDiskUsage(),
-      // this.checkDatabaseConnection(),
-      // this.checkRedisConnection(),
     ]);
 
     return {
       cpuUsage,
       memoryUsage,
       diskUsage,
-      // databaseConnected: dbConnected,
-      // redisConnected: redisConnected,
     };
   }
+
   /**
    * Analyze collected metrics and trigger notifications if needed
    */
   private async analyzeMetrics(metrics: HealthMetrics) {
-    // // Redis connection status - use explicit throttling
-    // if (!metrics.redisConnected && this.lastMetrics?.redisConnected) {
-    //   // Redis connection lost - only notify if not throttled
-    //   if (
-    //     !this.throttleService.shouldThrottle(
-    //       SystemEventType.QUEUE_FAILURE,
-    //       'health-check',
-    //     )
-    //   ) {
-    //     this.emitNotification(
-    //       SystemEventType.QUEUE_FAILURE,
-    //       {
-    //         description:
-    //           'Redis connection has been lost - queue system is unavailable',
-    //         severity: 'critical',
-    //         service: 'redis',
-    //         details: {
-    //           previousState: 'connected',
-    //           currentState: 'disconnected',
-    //           timestamp: new Date().toISOString(),
-    //           source: 'health-check',
-    //         },
-    //       },
-    //       'system-health',
-    //     );
-    //   }
-    // } else if (metrics.redisConnected && !this.lastMetrics?.redisConnected) {
-    //   // Redis connection restored - also throttle recoveries
-    //   if (
-    //     !this.throttleService.shouldThrottle(
-    //       SystemEventType.QUEUE_RECOVERY,
-    //       'health-check',
-    //     )
-    //   ) {
-    //     this.throttleService.resetThrottle(
-    //       SystemEventType.QUEUE_FAILURE,
-    //       'health-check',
-    //     );
-
-    //     this.emitNotification(
-    //       SystemEventType.QUEUE_RECOVERY,
-    //       {
-    //         description:
-    //           'Redis connection has been restored - queue system is back online',
-    //         severity: 'normal',
-    //         service: 'redis',
-    //         details: {
-    //           previousState: 'disconnected',
-    //           currentState: 'connected',
-    //           timestamp: new Date().toISOString(),
-    //           source: 'health-check',
-    //         },
-    //       },
-    //       'system-health',
-    //     );
-    //   }
-    // }
-
-    // // Database connection status - also throttled
-    // if (!metrics.databaseConnected && this.lastMetrics?.databaseConnected) {
-    //   if (
-    //     !this.throttleService.shouldThrottle(
-    //       SystemEventType.DATABASE_CONNECTION_LOST,
-    //       'health-check',
-    //     )
-    //   ) {
-    //     this.emitNotification(
-    //       SystemEventType.DATABASE_CONNECTION_LOST,
-    //       {
-    //         description: 'Database connection has been lost',
-    //         severity: 'critical',
-    //         service: 'database',
-    //         details: {
-    //           previousState: 'connected',
-    //           currentState: 'disconnected',
-    //           timestamp: new Date().toISOString(),
-    //           source: 'health-check',
-    //         },
-    //       },
-    //       'system-health',
-    //     );
-    //   }
-    // } else if (
-    //   metrics.databaseConnected &&
-    //   !this.lastMetrics?.databaseConnected
-    // ) {
-    //   if (
-    //     !this.throttleService.shouldThrottle(
-    //       SystemEventType.DATABASE_CONNECTION_RESTORED,
-    //       'health-check',
-    //     )
-    //   ) {
-    //     this.throttleService.resetThrottle(
-    //       SystemEventType.DATABASE_CONNECTION_LOST,
-    //       'health-check',
-    //     );
-
-    //     this.emitNotification(
-    //       SystemEventType.DATABASE_CONNECTION_RESTORED,
-    //       {
-    //         description: 'Database connection has been restored',
-    //         severity: 'normal',
-    //         service: 'database',
-    //         details: {
-    //           previousState: 'disconnected',
-    //           currentState: 'connected',
-    //           timestamp: new Date().toISOString(),
-    //           source: 'health-check',
-    //         },
-    //       },
-    //       'system-health',
-    //     );
-    //   }
-    // }
-
     // CPU usage
     if (metrics.cpuUsage > this.CPU_THRESHOLD) {
       const severity = metrics.cpuUsage > 90 ? 'critical' : 'high';
@@ -389,7 +259,7 @@ export class SystemHealthService implements OnModuleInit {
 
     const idle = totalIdle / cpus.length;
     const total = totalTick / cpus.length;
-    const usage = 100 - ~~((100 * idle) / total);
+    const usage = 100 - Math.floor((100 * idle) / total);
 
     return usage;
   }

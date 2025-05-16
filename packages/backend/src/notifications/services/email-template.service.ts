@@ -10,7 +10,6 @@ import type {
 import { AuthEventType, SystemEventType } from '@scaffold/types';
 import { EMAIL_TEMPLATES } from '../constants/notification.constants';
 import { LoggingService } from '@/logging/services/logging.service';
-import { formatTimeZoneDisplay } from '@scaffold/timezone-utils';
 
 interface EmailTemplateContext {
   adminName?: string;
@@ -75,11 +74,6 @@ export class EmailTemplateService {
         const compiled = handlebars.compile(templateContent);
         this.compiledTemplates.set(templateName, compiled);
       }
-
-      this.loggingService.info(
-        'Email templates compiled successfully',
-        'EmailTemplateService',
-      );
     } catch (error) {
       this.loggingService.error(
         'Failed to compile email templates',
@@ -157,18 +151,18 @@ export class EmailTemplateService {
       // System events
       [SystemEventType.SERVICE_DOWN]: 'Service Down',
       [SystemEventType.DATABASE_CONNECTION_LOST]: 'Database Connection Lost',
+      [SystemEventType.DATABASE_CONNECTION_RESTORED]:
+        'Database Connection Restored',
       [SystemEventType.CRITICAL_ERROR]: 'Critical System Error',
       [SystemEventType.BACKUP_FAILED]: 'Backup Failed',
       [SystemEventType.DISK_SPACE_LOW]: 'Low Disk Space Warning',
       [SystemEventType.MEMORY_USAGE_HIGH]: 'High Memory Usage Warning',
-
-      // ... add more as needed
     };
 
-    return (
+    const title =
       titles[event] ||
-      event.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
-    );
+      event.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    return title;
   }
 
   private getEmailSubject(

@@ -7,7 +7,7 @@ import { NOTIFICATION_QUEUE_NAME } from '../constants/notification.constants';
 import { Resend } from 'resend';
 import { RedisService } from '@/redis/services/redis.service';
 import { AppConfig } from '@/config/configuration';
-import { ErrorHandlingService } from '@/common/error-handling/services/error-handling.service';
+import { ErrorHandlingService } from '@/common/services/error-handling.service';
 
 @Injectable()
 export class NotificationProcessor implements OnModuleInit {
