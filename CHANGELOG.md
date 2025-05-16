@@ -5,6 +5,68 @@ All notable changes to the Scaffold project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2025-05-20
+
+### Added
+
+- Comprehensive health monitoring system
+
+  - CPU, memory, and disk usage monitoring with configurable thresholds
+  - Service availability tracking for database, Redis, and MongoDB
+  - Error rate monitoring with threshold-based alerting
+  - Automatic detection and notification of system recovery events
+
+- Event-driven system health architecture
+
+  - Central event bus for system health notifications
+  - Decoupled monitoring and notification components
+  - Standardized event format for consistent handling
+
+- Advanced admin notification system
+
+  - Real-time alerts for critical system events
+  - Email notifications with severity-based formatting
+  - Intelligent throttling to prevent notification storms
+  - Fallback delivery paths for notifications during service outages
+  - Handlebars-based email templates for consistent formatting
+
+- Notification customization
+
+  - Per-admin configurable preferences
+  - Event type filtering and severity thresholds
+  - Hourly and daily digest options for non-critical notifications
+  - Customizable quiet hours with timezone support
+
+- Admin notification UI
+
+  - Preference management in admin dashboard
+  - Test notification functionality
+  - Expanded admin sidebar with notifications section
+
+- Custom timezone utilities package
+
+  - IANA timezone support with consistent formatting
+  - Time offset calculation and display
+  - Timezone-aware date formatting helpers
+  - Used throughout the application for consistent time display
+
+- Enhanced Redis integration
+  - Improved connection handling and monitoring
+  - Automatic reconnection with event emission
+  - Better error handling for queue operations
+
+### Changed
+
+- Enhanced error handling throughout the application
+- Improved system resilience with multiple fallback mechanisms
+- Extended admin interface with system health monitoring capabilities
+
+### Fixed
+
+- Added proper JWT authentication to CSRF token refreshing endpoint
+- Verified correct HTTP status codes (401/403) for all auth endpoints
+- Fixed inconsistent error handling in sensitive API operations
+
 ## [0.11.0] - 2025-05-11
 
 ### Added

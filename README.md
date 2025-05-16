@@ -1,12 +1,68 @@
 # Scaffold
 
-> An open-source TypeScript foundation for modern web applications.
+![Version](https://img.shields.io/badge/version-0.12.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Build Status](https://img.shields.io/badge/build-passing-success.svg)
 
-Scaffold is a production-ready, authentication-first foundation for building modern web applications. It combines the power of NestJS on the backend with Tanstack Router and shadcn/ui on the frontend to provide a complete, type-safe development experience.
+> An enterprise-grade TypeScript foundation for building secure, monitored, and scalable modern web applications.
 
-## Version 0.11.0
+Scaffold is a production-ready, authentication-first foundation for building modern web applications. It combines the power of NestJS on the backend with Tanstack Router and shadcn/ui on the frontend to provide a complete, type-safe development experience with built-in security, monitoring, and notification systems.
 
-This release adds comprehensive device management capabilities, allowing users to view, trust, and remove devices that have accessed their account. It also includes legal document templates and improved security features.
+## What's New in 0.12.0
+
+The latest version introduces a comprehensive health monitoring and notification system:
+
+- **Real-time System Monitoring**: Track CPU, memory, disk usage, and service availability with configurable thresholds
+- **Intelligent Notifications**: Receive alerts via email with severity-based formatting and digest options (real-time, hourly, daily)
+- **Admin Notification Center**: Manage notification preferences, set quiet hours, and filter by severity
+- **Event-driven Architecture**: Decoupled monitoring and notification components with standardized events
+- **Service Resilience**: Multiple fallback mechanisms ensure critical alerts are delivered even during partial outages
+
+![Admin Notification Interface](https://i.imgur.com/example-notification-ui.png)
+
+## System Architecture
+
+Scaffold uses an event-driven architecture for health monitoring and notifications:
+
+```
+┌───────────────┐    ┌──────────────┐    ┌───────────────┐
+│ Health Monitors│───>│  Event Bus   │───>│ Notification  │
+└───────────────┘    └──────────────┘    │   Service     │
+      │                                  └───────┬───────┘
+      │                                          │
+┌─────▼───────┐                         ┌────────▼───────┐
+│ System      │                         │ Email / Queue  │
+│ Metrics     │                         │ Processors     │
+└─────────────┘                         └────────────────┘
+```
+
+## Features
+
+### Authentication & Security
+
+- Authentication system with Google OAuth integration
+- Session management with JWT and refresh tokens
+- CSRF protection for all endpoints
+- Device management with trust status and removal capabilities
+- Privacy Policy and Terms of Service templates
+
+### Administration & Monitoring
+
+- Admin portal with user management
+- Advanced logging system with MongoDB integration
+- Configurable log retention policies
+- Security event monitoring dashboard with filtering and export
+- User activity tracking and visualization
+- Health monitoring with automated alerts for system metrics and service availability
+- Intelligent notification system with email delivery, digests, and customizable preferences
+
+### Developer Experience
+
+- Type-safe communication between frontend and backend
+- API standardization with consistent error handling
+- Shared TypeScript types between packages
+- Custom timezone utilities for consistent formatting across the application
+- Responsive UI components with shadcn/ui and Tailwind
 
 ## Architecture Decisions
 
@@ -23,21 +79,15 @@ This release adds comprehensive device management capabilities, allowing users t
 - **Configurable Security Log Retention**: The system includes an automated log cleanup service that prunes older security logs according to configurable retention periods. This helps maintain system performance while preserving important security audit trails for an appropriate duration based on organizational requirements.
 - **Device Management**: The system tracks and allows management of authenticated devices, enhancing security by giving users visibility and control over their active sessions.
 - **Admin Module Separation**: Admin functionality is isolated in its own module with separate guards, providing clear separation of concerns.
-
-## Features
-
-- **Authentication System**: Complete OAuth integration with session management
-- **Security First**: CSRF protection, activity logging, session management
-- **Type Safety**: Shared TypeScript types between frontend and backend
-- **Admin Dashboard**: Built-in admin controls and security monitoring
-- **Advanced Logging**: Configurable logging with MongoDB integration for structured logs and retention policies
-- **Modern Stack**: NestJS, Tanstack Router, Prisma, shadcn/ui, Tailwind CSS
+- **Event-Driven Monitoring**: The system uses an event-driven architecture for health monitoring and notifications, allowing for loose coupling between components and easier extension with new monitoring capabilities. Events flow through a central event bus, with standardized formats ensuring consistent processing regardless of the event source.
+- **Tiered Notification Strategy**: Notifications are delivered through a tiered strategy: immediate critical alerts, hourly digests for important but non-urgent issues, and daily summaries for routine information. This ensures attention is appropriately directed based on severity.
+- **Resilient Communication Paths**: The notification system is designed with multiple fallback paths to ensure critical alerts are delivered even during partial system outages. This includes cached admin contact information and dedicated emergency channels.
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ and pnpm
+- Node.js 20+ and pnpm
 - Docker and Docker Compose (for local database)
 
 ### Setup
@@ -76,12 +126,19 @@ openssl rand -hex 32
 2. **Update backend .env file** with your generated values and OAuth credentials
 
 3. **Set up Google OAuth** (required):
+
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Create a new project
    - Navigate to "APIs & Services" > "Credentials"
    - Create an OAuth 2.0 Client ID
    - Add authorized redirect URI: `http://localhost:3001/auth/google/callback`
    - Copy Client ID and Secret to your backend .env file
+
+4. **Configure Email for Notifications** (required for admin alerts):
+   - Set up a [Resend](https://resend.com) account for email delivery
+   - Add your API key to the `RESEND_API_KEY` environment variable
+   - Configure sender email in `FROM_ADDRESS`
+   - Set emergency contacts in `EMERGENCY_ADMIN_EMAILS` (comma-separated)
 
 ### Start Development Environment
 
@@ -102,6 +159,20 @@ The application will be available at:
 - Backend API: http://localhost:3001
 - API Documentation: http://localhost:3001/api
 
+### System Monitoring Configuration
+
+The monitoring system comes with sensible defaults, but you may want to adjust thresholds:
+
+```typescript
+// Default alert thresholds
+const CPU_THRESHOLD = 80; // Percent usage
+const MEMORY_THRESHOLD = 85; // Percent usage
+const DISK_THRESHOLD = 90; // Percent usage
+const ERROR_THRESHOLD = 10; // Errors per minute
+```
+
+Customize these values in `packages/backend/src/monitoring/services/system-health.service.ts` or expose them through environment variables for deployment flexibility.
+
 ### Types Package
 
 The `@scaffold/types` package contains shared TypeScript types and enums used by both frontend and backend. When making changes to this package, you need to rebuild it to ensure changes are properly reflected throughout the project:
@@ -117,6 +188,37 @@ pnpm build
 This is particularly important when modifying enums or interfaces that are used for communication between frontend and backend. After rebuilding, TypeScript will detect the updated types across the project.
 
 For CI/CD environments, ensure your build process includes this step to maintain type safety.
+
+## Upgrading from 0.11.0
+
+If you're upgrading from version 0.11.0, follow these steps:
+
+1. **Update environment variables**:
+
+   - Add new required variables for email notifications:
+     ```
+     RESEND_API_KEY=your_resend_api_key
+     FROM_ADDRESS=alerts@yourdomain.com
+     EMERGENCY_ADMIN_EMAILS=admin1@example.com,admin2@example.com
+     ```
+
+2. **Run database migrations**:
+
+   ```bash
+   pnpm --filter backend db:migrate
+   ```
+
+3. **Rebuild and restart**:
+
+   ```bash
+   pnpm build
+   pnpm dev # or pnpm start:prod for production
+   ```
+
+4. **Configure notifications**:
+   - Access the new notification settings in the admin panel
+   - Set your preferred delivery schedule and alert thresholds
+   - Test the notification system with the built-in test function
 
 ## Deployment Options
 
@@ -197,6 +299,40 @@ Scaffold implements a comprehensive error handling strategy:
 
 This standardized approach makes error handling more predictable for developers and improves the user experience by providing clear feedback on form validation and system errors.
 
+## Extending the Monitoring System
+
+The monitoring system is designed to be extensible. To add custom metrics:
+
+1. Create a new listener in `packages/backend/src/monitoring/listeners/`
+2. Subscribe to relevant events using the `@OnEvent()` decorator
+3. Emit notification events when thresholds are exceeded:
+
+```typescript
+@Injectable()
+export class CustomMetricListener {
+  constructor(
+    private throttleService: NotificationThrottleService,
+    private eventEmitter: EventEmitter2,
+  ) {}
+
+  @OnEvent('custom.metric.exceeded')
+  handleMetricExceeded(payload: any) {
+    if (!this.throttleService.shouldThrottle('CUSTOM_METRIC_HIGH', 'custom')) {
+      this.eventEmitter.emit('notification.send', {
+        type: 'CUSTOM_METRIC_HIGH',
+        data: {
+          description: 'Custom metric exceeded threshold',
+          severity: 'high',
+          service: 'custom',
+          details: payload,
+        },
+        source: 'custom-metric-listener',
+      });
+    }
+  }
+}
+```
+
 ## License
 
 MIT License
@@ -224,6 +360,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - Configurable log retention policies
 - Security event monitoring dashboard with filtering and export
 - User activity tracking and visualization
+- Health monitoring with automated alerts for system metrics and service availability
+- Intelligent notification system with email delivery, digests, and customizable preferences
 
 **Developer Experience**
 
@@ -236,12 +374,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 #### Admin Notification System
 
-- [ ] Implement real-time security alert notifications for admins, using a queue-based approach to avoid impacting request performance
-- [ ] Create configurable notification thresholds (login failures, suspicious activity)
-- [ ] Add email notification capabilities for critical security events
-- [ ] Develop notification preferences management UI
-- [ ] Implement notification digest options (real-time, hourly, daily summary)
-- [ ] Create in-app notification center for viewing alert history
+- [x] Implement real-time security alert notifications for admins using a queue-based approach
+- [x] Create configurable notification thresholds for system metrics (CPU, memory, disk)
+- [x] Add email notification capabilities for critical security events
+- [x] Develop notification preferences management UI
+- [x] Implement notification digest options (real-time, hourly, daily summary)
+- [x] Create notification display for admin dashboard
+- [x] Add intelligent throttling to prevent notification storms
+- [x] Implement fallback notification paths for critical system failures
 - [ ] Add webhook support for integration with external monitoring systems
 - [ ] Implement read/unread status tracking for notifications
 
@@ -250,6 +390,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [ ] Increase unit test coverage for auth services to >80%
 - [ ] Add integration tests for critical API endpoints
 - [ ] Implement E2E tests for login and admin flows
+- [ ] Add comprehensive tests for health monitoring and notification systems
 
 #### Documentation
 
