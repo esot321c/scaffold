@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { LoggingService } from '@/logging/services/logging.service';
 import { AuthEventType } from '@scaffold/types';
+import { JwtPayload } from '../strategies/jwt.strategy';
 
 interface OAuthUserData {
   provider: string;
@@ -99,7 +100,7 @@ export class AuthService {
     const user = await this.findOrCreateUser(userData);
     await this.upsertAccount(user.id, userData);
     const session = await this.createSession(user.id, ipAddress, userAgent);
-    const accessToken = this.generateJwtToken(user, session.id);
+    const accessToken = this.generateApiToken(user, session.id);
 
     // Log successful mobile login
     await this.loggingService.logSecurityEvent({
@@ -319,14 +320,30 @@ export class AuthService {
     return crypto.randomUUID();
   }
 
-  generateJwtToken(user: any, sessionId: string) {
-    const payload = {
+  /**
+   * Generates a JWT token for user authentication
+   * @param user User data to encode in the token
+   * @param sessionId Session identifier to associate with the token
+   * @param forCookie Whether this token is intended for cookie-based auth
+   * @returns Signed JWT token
+   */
+  generateJwtToken(
+    user: { id: string; email: string },
+    sessionId: string,
+    forCookie: boolean = true,
+  ): string {
+    const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       sessionId,
+      authType: forCookie ? 'cookie' : 'bearer',
     };
-
     return this.jwtService.sign(payload);
+  }
+
+  // When generating tokens for mobile clients or API use, use forCookie = false
+  generateApiToken(user: any, sessionId: string) {
+    return this.generateJwtToken(user, sessionId, false);
   }
 
   async validateSession(sessionId: string) {

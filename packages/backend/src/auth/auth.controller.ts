@@ -10,6 +10,7 @@ import {
   Param,
   UnauthorizedException,
   Logger,
+  HttpCode,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
@@ -65,6 +66,7 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       this.logger.log('Logout - User data:', req.user);
