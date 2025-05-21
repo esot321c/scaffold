@@ -182,11 +182,63 @@ describe('Authentication System (e2e)', () => {
   }, 30000);
 
   afterAll(async () => {
-    // Close the app which should close most connections
-    await app.close();
+    try {
+      // First get all test user IDs to properly clean up sessions
+      const testUsers = await prismaService.user.findMany({
+        where: {
+          email: {
+            contains: 'e2e-test-',
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
 
-    // Explicitly close other connections
-    await prismaService.$disconnect();
+      const userIds = testUsers.map((user) => user.id);
+
+      // Delete all sessions created for test users
+      if (userIds.length > 0) {
+        await prismaService.session.deleteMany({
+          where: {
+            userId: {
+              in: userIds,
+            },
+          },
+        });
+      }
+
+      // Delete devices if your schema has them
+      if (userIds.length > 0) {
+        await prismaService.device.deleteMany({
+          where: {
+            userId: {
+              in: userIds,
+            },
+          },
+        });
+      }
+
+      // Delete the test users themselves
+      await prismaService.user.deleteMany({
+        where: {
+          email: {
+            contains: 'e2e-test-',
+          },
+        },
+      });
+
+      // Close the app which should close most connections
+      await app.close();
+
+      // Explicitly close other connections
+      await prismaService.$disconnect();
+    } catch (error) {
+      console.error('Error during test cleanup:', error);
+      // Still try to close connections even if cleanup fails
+      await app.close();
+      await prismaService.$disconnect();
+    }
   });
 
   // Browser-based Authentication tests

@@ -100,4 +100,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   isConnected(): boolean {
     return this.redisConnected;
   }
+
+  async closeAllConnections(): Promise<void> {
+    try {
+      const connection = this.getConnection();
+      if (connection) {
+        await connection.quit();
+      }
+    } catch (error) {
+      console.error('Error closing Redis connection:', error);
+    }
+  }
 }

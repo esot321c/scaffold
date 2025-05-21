@@ -23,6 +23,7 @@ import { LogsController } from './admin/controllers/logs.controller';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { RateLimitingModule } from './rate-limiting/rate-limiting.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     // System monitoring modules last as they may depend on all other modules
     NotificationsModule,
     MonitoringModule,
+    RateLimitingModule,
   ],
   controllers: [AppController, UsersController, LogsController],
   providers: [AppService],

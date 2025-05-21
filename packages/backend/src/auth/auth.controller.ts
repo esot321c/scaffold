@@ -181,27 +181,45 @@ export class AuthController {
     return { success: true };
   }
 
-  @Post('token')
-  @ApiOperation({ summary: 'Get access token for mobile clients' })
-  @ApiBody({ type: MobileAuthDto })
-  async getToken(
-    @Body() authData: MobileAuthDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const tokenData = await this.authService.verifyMobileToken(
-      authData.provider,
-      authData.token,
-      authData.deviceInfo,
-    );
-
-    const csrfToken = this.cookieService.setCsrfCookie(res);
-
-    return {
-      user: tokenData.user,
-      access_token: tokenData.accessToken,
-      csrf_token: csrfToken,
-    };
-  }
+  /**
+   * SECURITY NOTE: Mobile token authentication endpoint (DISABLED)
+   *
+   * This endpoint was intended to provide authentication for mobile clients
+   * by verifying tokens from OAuth providers. It has been disabled because:
+   *
+   * 1. It lacks proper authentication guards and security measures
+   * 2. It would allow unauthenticated access to token verification
+   * 3. It requires additional protections against brute force attacks
+   *
+   * To properly implement this endpoint, the following would be needed:
+   * - MobileAppAuthGuard to verify app-specific signatures/API keys
+   * - Enhanced rate limiting specific to authentication attempts
+   * - Device fingerprinting and verification
+   * - Proper logging of authentication attempts
+   * - Token validation with enhanced security checks
+   *
+   * IMPLEMENTATION STATUS: Disabled/Example only - Do not enable in production
+   * without implementing the security measures above.
+   */
+  // @Post('token')
+  // @ApiOperation({ summary: 'Get access token for mobile clients' })
+  // @ApiBody({ type: MobileAuthDto })
+  // async getToken(
+  //   @Body() authData: MobileAuthDto,
+  //   @Res({ passthrough: true }) res: Response,
+  // ) {
+  //   const tokenData = await this.authService.verifyMobileToken(
+  //     authData.provider,
+  //     authData.token,
+  //     authData.deviceInfo,
+  //   );
+  //   const csrfToken = this.cookieService.setCsrfCookie(res);
+  //   return {
+  //     user: tokenData.user,
+  //     access_token: tokenData.accessToken,
+  //     csrf_token: csrfToken,
+  //   };
+  // }
 
   @Post('refresh')
   @HttpCode(200)
