@@ -8,7 +8,7 @@
 
 Scaffold is a production-ready, authentication-first foundation for building modern web applications. It combines the power of NestJS on the backend with Tanstack Router and shadcn/ui on the frontend to provide a complete, type-safe development experience with built-in security, monitoring, and notification systems.
 
-## What's New in 0.12.2
+## What's New in 0.14.0
 
 The latest version adds comprehensive health monitoring to the admin dashboard:
 
@@ -18,7 +18,7 @@ The latest version adds comprehensive health monitoring to the admin dashboard:
 - **Auto-refreshing Metrics**: Dashboard automatically updates every minute to provide current system status
 - **Enhanced Admin Experience**: Streamlined admin interface with health monitoring as the primary dashboard section
 
-## What's New in 0.12.1
+## What's New in 0.13.0
 
 This version enhances security and stability with comprehensive rate limiting and improved authentication:
 
