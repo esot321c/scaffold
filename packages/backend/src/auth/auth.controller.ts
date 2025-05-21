@@ -184,12 +184,11 @@ export class AuthController {
   /**
    * SECURITY NOTE: Mobile token authentication endpoint (DISABLED)
    *
-   * This endpoint was intended to provide authentication for mobile clients
+   * This endpoint is intended to provide authentication for mobile clients
    * by verifying tokens from OAuth providers. It has been disabled because:
    *
    * 1. It lacks proper authentication guards and security measures
    * 2. It would allow unauthenticated access to token verification
-   * 3. It requires additional protections against brute force attacks
    *
    * To properly implement this endpoint, the following would be needed:
    * - MobileAppAuthGuard to verify app-specific signatures/API keys
