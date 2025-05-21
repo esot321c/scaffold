@@ -1,6 +1,6 @@
 # Scaffold
 
-![Version](https://img.shields.io/badge/version-0.12.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.14.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build Status](https://img.shields.io/badge/build-passing-success.svg)
 
