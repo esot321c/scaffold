@@ -39,6 +39,24 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const fromCookie = !!request.cookies?.['auth_token'];
     const fromHeader = !!request.headers?.authorization?.startsWith('Bearer ');
 
+    // Prevent bearer tokens being used as cookie tokens
+    if (fromCookie && payload.authType === 'bearer') {
+      await this.loggingService.logSecurityEvent({
+        level: 'warn',
+        userId: payload.sub,
+        event: AuthEventType.SUSPICIOUS_AUTH_ACTIVITY,
+        success: false,
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent'],
+        requestId: request.headers['x-request-id'] as string,
+        details: {
+          reason: 'bearer_token_in_cookie',
+          sessionId: payload.sessionId,
+        },
+      });
+      throw new UnauthorizedException('Invalid authentication method');
+    }
+
     // Prevent cookie tokens from being used as Bearer tokens
     if (fromHeader && !fromCookie) {
       // Check if this token was meant for cookie-based auth

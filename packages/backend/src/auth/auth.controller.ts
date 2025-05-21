@@ -204,6 +204,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   async refreshToken(
     @Req() req: Request,

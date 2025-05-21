@@ -21,17 +21,55 @@ async function bootstrap() {
         contentSecurityPolicy: {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"], // Remove 'unsafe-inline' if possible
+            styleSrc: ["'self'"], // Remove 'unsafe-inline' if possible
             imgSrc: ["'self'", 'data:'],
-            connectSrc: ["'self'", 'https://accounts.google.com'],
+            connectSrc: [
+              "'self'",
+              'https://accounts.google.com',
+              'https://api.resend.com',
+            ], // TODO: Note in readme to add any API endpoints here
             frameSrc: ["'self'", 'https://accounts.google.com'],
             objectSrc: ["'none'"],
-            upgradeInsecureRequests: [],
+            formAction: ["'self'"],
+            upgradeInsecureRequests:
+              process.env.NODE_ENV === 'production' ? [] : null,
+            // Add nonce support for better security while using inline scripts/styles
+            scriptSrcAttr: ["'none'"],
+            baseUri: ["'self'"],
+            childSrc: ["'self'"],
+            fontSrc: ["'self'", 'data:'],
+            manifestSrc: ["'self'"],
+            mediaSrc: ["'self'"],
+            workerSrc: ["'self'", 'blob:'],
           },
+        },
+        hsts: {
+          maxAge: 15552000, // 180 days in seconds
+          includeSubDomains: true,
+          preload: true,
         },
       }),
     );
+
+    app.use((req, res, next) => {
+      // Permissions Policy (formerly Feature-Policy)
+      res.setHeader(
+        'Permissions-Policy',
+        'geolocation=(self), camera=(), microphone=(), interest-cohort=()',
+      );
+
+      // Cross-Origin Embedder Policy
+      res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+
+      // Cross-Origin Opener Policy
+      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+
+      // Cross-Origin Resource Policy
+      res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+
+      next();
+    });
 
     app.useGlobalPipes(
       new ValidationPipe({
