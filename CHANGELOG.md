@@ -5,7 +5,71 @@ All notable changes to the Scaffold project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.12.0] - 2025-05-20
+## [0.12.2] - 2025-05-21
+
+### Added
+
+- Real-time System Health Dashboard:
+  - Live health monitoring dashboard in admin interface showing database, Redis, and MongoDB connection status
+  - System resource monitoring with visual indicators for CPU, memory, and disk usage
+  - Service response time tracking and last-checked timestamps
+  - Color-coded health status indicators (healthy, degraded, down)
+- Health API Endpoint:
+  - New `/admin/health` endpoint providing real-time system metrics
+  - Integration with existing health monitoring infrastructure
+  - Automatic health checks with configurable thresholds
+- Enhanced Admin Interface:
+  - Updated admin dashboard with comprehensive system overview
+  - Visual progress bars for resource usage metrics
+  - Auto-refreshing health data every minute
+
+### Changed
+
+- Enhanced admin dashboard layout with health monitoring as primary section
+- Improved visual hierarchy in admin interface
+- Extended monitoring module to expose health metrics via REST API
+
+### Fixed
+
+- Added missing Tailwind color definitions for success, warning, and info states
+- Improved error handling in health check endpoints
+
+## [0.12.1] - 2025-05-21
+
+### Added
+
+- Comprehensive Redis-backed rate limiting system
+  - Path-based rate limiting with different rules for auth, admin, and API endpoints
+  - User ID and IP address tracking for more accurate rate limit enforcement
+  - Admin interface for viewing and adjusting rate limits
+  - Configurable through database with graceful fallbacks
+- Extensive E2E Testing Suite:
+  - End-to-end tests for authentication flows and security features
+  - Tests for authentication context switching prevention
+  - Rate limiting effectiveness verification
+  - Integration with security logging system
+
+### Security Improvements
+
+- Fixed critical authentication vulnerabilities
+  - Addressed vulnerability allowing CSRF protection bypass through authentication context switching
+  - Implemented stricter validation of authentication methods (cookie vs. Bearer)
+  - Added comprehensive logging of authentication context violations
+
+### Changed
+
+- Enhanced test coverage for critical security components
+- Improved authentication testing methodology
+- Added verification of security logs as part of test suite
+- Strengthened token validation in JWT strategy
+
+### Fixed
+
+- **Critical**: Fixed vulnerability allowing users to bypass CSRF protection by using refresh tokens as Bearer tokens
+- Improved token type validation with proper authentication context enforcement
+- Enhanced handling of conflicting authentication methods
+
+## [0.12.0] - 2025-05-16
 
 ### Added
 
@@ -87,7 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved device recognition logic in backend
 - Updated security logging for device-related actions
 
-## [0.10.0] - 2025-05-11
+## [0.10.0] - 2025-05-10
 
 ### Added
 

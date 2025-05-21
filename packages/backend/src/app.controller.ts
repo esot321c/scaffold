@@ -16,6 +16,6 @@ export class AppController {
   @Get('ping')
   @ApiOperation({ summary: 'Health check endpoint' })
   ping(): string {
-    return 'test';
+    return 'pong';
   }
 }

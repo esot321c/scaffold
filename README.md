@@ -8,15 +8,25 @@
 
 Scaffold is a production-ready, authentication-first foundation for building modern web applications. It combines the power of NestJS on the backend with Tanstack Router and shadcn/ui on the frontend to provide a complete, type-safe development experience with built-in security, monitoring, and notification systems.
 
-## What's New in 0.12.0
+## What's New in 0.12.2
 
-The latest version introduces a comprehensive health monitoring and notification system:
+The latest version adds comprehensive health monitoring to the admin dashboard:
 
-- **Real-time System Monitoring**: Track CPU, memory, disk usage, and service availability with configurable thresholds
-- **Intelligent Notifications**: Receive alerts via email with severity-based formatting and digest options (real-time, hourly, daily)
-- **Admin Notification Center**: Manage notification preferences, set quiet hours, and filter by severity
-- **Event-driven Architecture**: Decoupled monitoring and notification components with standardized events
-- **Service Resilience**: Multiple fallback mechanisms ensure critical alerts are delivered even during partial outages
+- **Real-time Health Dashboard**: Visual monitoring of database, Redis, and MongoDB connection status with response time tracking
+- **System Resource Monitoring**: Live CPU, memory, and disk usage indicators with color-coded visual progress bars
+- **Service Status Overview**: Quick assessment of system health with "healthy", "degraded", and "down" status indicators
+- **Auto-refreshing Metrics**: Dashboard automatically updates every minute to provide current system status
+- **Enhanced Admin Experience**: Streamlined admin interface with health monitoring as the primary dashboard section
+
+## What's New in 0.12.1
+
+This version enhances security and stability with comprehensive rate limiting and improved authentication:
+
+- **Path-Based Rate Limiting**: Different rate limit rules for authentication, admin, and API endpoints protect against abuse and brute force attacks
+- **Enhanced Security**: Fixed critical authentication vulnerability that could allow CSRF protection bypass through context switching
+- **User & IP Tracking**: Sophisticated tracking capabilities ensure fair API usage across different authentication methods
+- **Admin Configuration**: Manage and adjust rate limits through an intuitive admin interface
+- **Extensive E2E Testing**: Comprehensive test suite validates security features, authentication flows, and rate limiting effectiveness
 
 ## System Architecture
 
@@ -42,6 +52,9 @@ Scaffold uses an event-driven architecture for health monitoring and notificatio
 - Session management with JWT and refresh tokens
 - CSRF protection for all endpoints
 - Device management with trust status and removal capabilities
+- Path-based rate limiting for all endpoints with different rules for auth, admin, and API routes
+- Protection against authentication context switching attacks
+- Strict validation of authentication methods with security event logging
 - Privacy Policy and Terms of Service templates
 
 ### Administration & Monitoring
@@ -53,6 +66,9 @@ Scaffold uses an event-driven architecture for health monitoring and notificatio
 - User activity tracking and visualization
 - Health monitoring with automated alerts for system metrics and service availability
 - Intelligent notification system with email delivery, digests, and customizable preferences
+- Real-time system health dashboard with service status monitoring
+- Visual resource usage indicators for CPU, memory, and disk space
+- Database, Redis, and MongoDB connection health tracking
 
 ### Developer Experience
 
@@ -82,6 +98,8 @@ Scaffold uses an event-driven architecture for health monitoring and notificatio
 - **Resilient Communication Paths**: The notification system is designed with multiple fallback paths to ensure critical alerts are delivered even during partial system outages. This includes cached admin contact information and dedicated emergency channels.
 - **BullMQ for Job Processing**: The notification system leverages BullMQ (backed by Redis) for reliable background job processing. This provides guaranteed delivery of notifications, rate limiting, automatic retries, and concurrency control. Jobs are persisted in Redis, ensuring notification delivery even if the application restarts during processing.
 - **Resend for Email Delivery**: For reliable email communication, Scaffold integrates Resend as the transactional email provider. This modern API-based platform offers high deliverability rates, detailed delivery tracking, and template management. Resend also provides easy integration with our notification templates and priority handling for critical alerts.
+- **Comprehensive Rate Limiting**: The system implements a Redis-backed rate limiting solution with path-based rules for different endpoint types. This prevents abuse of API endpoints, protects against brute force attacks, and provides different rate limit thresholds based on endpoint sensitivity (authentication endpoints being most restrictive). Rate limits are configurable through database settings with graceful fallbacks to defaults when needed.
+- **Health Monitoring Dashboard**: The admin interface includes a real-time health monitoring dashboard that provides immediate visibility into system status. This builds on the existing health monitoring infrastructure by exposing metrics through a REST API, allowing administrators to quickly assess system health without relying solely on notifications. The dashboard includes service connectivity status, resource usage metrics, and response time tracking.
 
 ## Quick Start
 
@@ -389,7 +407,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 - [ ] Increase unit test coverage for auth services to >80%
 - [ ] Add integration tests for critical API endpoints
-- [ ] Implement E2E tests for login and admin flows
+- [x] Implement E2E tests for login and admin flows
+- [x] E2E tests for rate limiting
 - [ ] Add comprehensive tests for health monitoring and notification systems
 
 #### Documentation
@@ -407,7 +426,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 #### Performance & Security
 
-- [ ] Implement rate limiting for auth endpoints
+- [x] Implement rate limiting for auth endpoints
 - [ ] Add advanced CSP headers
 - [ ] Complete security audit
 - [ ] Enable database query optimization

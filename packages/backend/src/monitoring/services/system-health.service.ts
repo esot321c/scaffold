@@ -366,4 +366,45 @@ export class SystemHealthService implements OnModuleInit {
       'error-reporter',
     );
   }
+
+  /**
+   * Get current CPU usage percentage
+   */
+  async getCurrentCpuUsage(): Promise<number> {
+    return this.getCpuUsage();
+  }
+
+  /**
+   * Get current memory usage percentage
+   */
+  getCurrentMemoryUsage(): number {
+    return this.getMemoryUsage();
+  }
+
+  /**
+   * Get current disk usage percentage
+   */
+  async getCurrentDiskUsage(): Promise<number> {
+    return this.getDiskUsage();
+  }
+
+  /**
+   * Get current system metrics
+   */
+  async getCurrentMetrics(): Promise<{
+    cpuUsage: number;
+    memoryUsage: number;
+    diskUsage: number;
+  }> {
+    const [cpuUsage, diskUsage] = await Promise.all([
+      this.getCurrentCpuUsage(),
+      this.getCurrentDiskUsage(),
+    ]);
+
+    return {
+      cpuUsage,
+      memoryUsage: this.getCurrentMemoryUsage(),
+      diskUsage,
+    };
+  }
 }

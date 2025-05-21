@@ -25,7 +25,7 @@ export function AdminLayout() {
       {/* Content area */}
       <div className="flex-1 flex flex-col">
         <div className="p-4 border-b bg-background flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Admin Portal</h1>
+          <h1 className="text-xl font-semibold mb-0">Admin Portal</h1>
           <div className="flex items-center gap-2">
             <Shield size={16} className="text-blue-500" />
             <span className="text-sm">
