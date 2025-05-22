@@ -21,13 +21,16 @@ async function bootstrap() {
         contentSecurityPolicy: {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'"], // Remove 'unsafe-inline' if possible
-            styleSrc: ["'self'"], // Remove 'unsafe-inline' if possible
+            scriptSrc: ["'self'"], // Leave off 'unsafe-inline' if possible
+            styleSrc: ["'self'"], // Leave off 'unsafe-inline' if possible
             imgSrc: ["'self'", 'data:'],
             connectSrc: [
               "'self'",
               'https://accounts.google.com',
               'https://api.resend.com',
+              ...(process.env.NODE_ENV === 'development'
+                ? ['ws://localhost:*']
+                : []),
             ], // TODO: Note in readme to add any API endpoints here
             frameSrc: ["'self'", 'https://accounts.google.com'],
             objectSrc: ["'none'"],
@@ -38,7 +41,7 @@ async function bootstrap() {
             scriptSrcAttr: ["'none'"],
             baseUri: ["'self'"],
             childSrc: ["'self'"],
-            fontSrc: ["'self'", 'data:'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
             manifestSrc: ["'self'"],
             mediaSrc: ["'self'"],
             workerSrc: ["'self'", 'blob:'],
@@ -59,7 +62,8 @@ async function bootstrap() {
         'geolocation=(self), camera=(), microphone=(), interest-cohort=()',
       );
 
-      // Cross-Origin Embedder Policy
+      // Strict Cross-Origin policies for enhanced security
+      // May need adjustment if embedding content from other origins
       res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
 
       // Cross-Origin Opener Policy

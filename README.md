@@ -1,32 +1,12 @@
 # Scaffold
 
-![Version](https://img.shields.io/badge/version-0.14.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.14.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build Status](https://img.shields.io/badge/build-passing-success.svg)
 
 > An enterprise-grade TypeScript foundation for building secure, monitored, and scalable modern web applications.
 
 Scaffold is a production-ready, authentication-first foundation for building modern web applications. It combines the power of NestJS on the backend with Tanstack Router and shadcn/ui on the frontend to provide a complete, type-safe development experience with built-in security, monitoring, and notification systems.
-
-## What's New in 0.14.0
-
-The latest version adds comprehensive health monitoring to the admin dashboard:
-
-- **Real-time Health Dashboard**: Visual monitoring of database, Redis, and MongoDB connection status with response time tracking
-- **System Resource Monitoring**: Live CPU, memory, and disk usage indicators with color-coded visual progress bars
-- **Service Status Overview**: Quick assessment of system health with "healthy", "degraded", and "down" status indicators
-- **Auto-refreshing Metrics**: Dashboard automatically updates every minute to provide current system status
-- **Enhanced Admin Experience**: Streamlined admin interface with health monitoring as the primary dashboard section
-
-## What's New in 0.13.0
-
-This version enhances security and stability with comprehensive rate limiting and improved authentication:
-
-- **Path-Based Rate Limiting**: Different rate limit rules for authentication, admin, and API endpoints protect against abuse and brute force attacks
-- **Enhanced Security**: Fixed critical authentication vulnerability that could allow CSRF protection bypass through context switching
-- **User & IP Tracking**: Sophisticated tracking capabilities ensure fair API usage across different authentication methods
-- **Admin Configuration**: Manage and adjust rate limits through an intuitive admin interface
-- **Extensive E2E Testing**: Comprehensive test suite validates security features, authentication flows, and rate limiting effectiveness
 
 ## System Architecture
 
@@ -153,21 +133,31 @@ openssl rand -hex 32
    - Copy Client ID and Secret to your backend .env file
 
 4. **Configure Email for Notifications** (required for admin alerts):
+
    - Set up a [Resend](https://resend.com) account for email delivery
    - Add your API key to the `RESEND_API_KEY` environment variable
    - Configure sender email in `FROM_ADDRESS`
    - Set emergency contacts in `EMERGENCY_ADMIN_EMAILS` (comma-separated)
 
+5. **Setup frontend .env file**
+   - `cp packages/frontend/.env.example packages/frontend/.env`
+
 ### Start Development Environment
 
 ```bash
+# Install dependencies
+pnpm install
+
+cd packages/backend
+
 # Start Postgres, Redis, and MongoDB
-docker-compose up -d
+docker compose up -d
 
 # Run database migrations
-pnpm --filter backend db:migrate
+pnpm prisma migrate dev
 
-# Start development servers
+# Start all services
+cd ../..
 pnpm dev
 ```
 
@@ -206,37 +196,6 @@ pnpm build
 This is particularly important when modifying enums or interfaces that are used for communication between frontend and backend. After rebuilding, TypeScript will detect the updated types across the project.
 
 For CI/CD environments, ensure your build process includes this step to maintain type safety.
-
-## Upgrading from 0.11.0
-
-If you're upgrading from version 0.11.0, follow these steps:
-
-1. **Update environment variables**:
-
-   - Add new required variables for email notifications:
-     ```
-     RESEND_API_KEY=your_resend_api_key
-     FROM_ADDRESS=alerts@yourdomain.com
-     EMERGENCY_ADMIN_EMAILS=admin1@example.com,admin2@example.com
-     ```
-
-2. **Run database migrations**:
-
-   ```bash
-   pnpm --filter backend db:migrate
-   ```
-
-3. **Rebuild and restart**:
-
-   ```bash
-   pnpm build
-   pnpm dev # or pnpm start:prod for production
-   ```
-
-4. **Configure notifications**:
-   - Access the new notification settings in the admin panel
-   - Set your preferred delivery schedule and alert thresholds
-   - Test the notification system with the built-in test function
 
 ## Deployment Options
 
@@ -285,6 +244,25 @@ Scaffold is designed to be deployment-agnostic. Here are some common deployment 
 ### Required Environment Variables
 
 See `.env.example` files in each package for required environment variables. MongoDB configuration is optional; if not provided, the system will fall back to file-based logging only.
+
+### Security Headers Configuration
+
+The application includes comprehensive security headers configured in `packages/backend/src/main.ts`. Before deploying:
+
+1. **Review CSP settings**: If integrating external APIs or services, add their domains to the `connectSrc` directive:
+
+   ```typescript
+   connectSrc: [
+     "'self'",
+     "https://accounts.google.com",
+     "https://api.resend.com",
+     "https://your-external-api.com", // Add your APIs here
+   ],
+   ```
+
+2. **Cross-Origin policies**: The application uses strict Cross-Origin headers for enhanced security. These may need adjustment if you plan to embed content from other origins or integrate with iframe-based services.
+
+3. **HSTS settings**: Production deployments should verify the HSTS configuration matches your domain setup and certificate authority requirements.
 
 ## MongoDB Configuration (Optional)
 
@@ -427,7 +405,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 #### Performance & Security
 
 - [x] Implement rate limiting for auth endpoints
-- [ ] Add advanced CSP headers
+- [x] Add advanced CSP headers
 - [ ] Complete security audit
 - [ ] Enable database query optimization
 

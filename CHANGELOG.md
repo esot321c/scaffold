@@ -5,6 +5,28 @@ All notable changes to the Scaffold project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2025-05-21
+
+### Added
+
+- **Comprehensive Security Headers**: Enhanced application security with strict Content Security Policy (CSP) and additional security headers
+  - CSP prevents code injection attacks with strict `script-src` and `style-src` policies
+  - Cross-Origin policies (COEP, COOP, CORP) for enhanced isolation
+  - Permissions Policy to control browser feature access
+  - HSTS with 180-day max-age and subdomain inclusion
+  - Standard security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+
+### Changed
+
+- Updated README with security header configuration guidance
+- Added documentation for CSP customization when integrating external APIs
+- Improved quick start instructions with proper database migration commands
+
+### Fixed
+
+- Corrected README database migration command from `db:migrate` to `prisma migrate dev`
+- Added missing `pnpm install` step in setup instructions
+
 ## [0.14.0] - 2025-05-21
 
 ### Added
