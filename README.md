@@ -1,6 +1,6 @@
 # Scaffold
 
-![Version](https://img.shields.io/badge/version-0.14.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.15.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build Status](https://img.shields.io/badge/build-passing-success.svg)
 
@@ -66,7 +66,7 @@ Scaffold uses an event-driven architecture for health monitoring and notificatio
 - **PostgreSQL with Prisma**: Offers type-safe database access with migrations, ensuring data integrity and developer productivity.
 - **Redis for Caching**: The system includes Redis infrastructure for performance optimization, allowing efficient caching of external API responses, expensive database queries, or other frequently accessed data. This caching layer can significantly reduce latency and minimize costs when integrating with rate-limited or pay-per-call third-party services.
 - **Advanced Logging System**: A flexible, configurable logging infrastructure with MongoDB support for structured logs, retention policies, and comprehensive security event tracking. This system provides visibility into user activity, security events, and API performance while maintaining appropriate data retention policies.
-- **Session-Based Authentication**: We implemented a hybrid JWT+session approach for auth, providing the flexibility of JWTs while maintaining the security benefits of server-side sessions with explicit invalidation capability.
+- **Hybrid JWT+Session Authentication with Performance Optimization**: Implements a two-tier authentication system optimized for scalability. JWTs provide short-lived (2-hour) request authentication without database queries, while long-lived (60-day) sessions maintain persistent authentication state. This eliminates per-request database hits while preserving security through token expiry and periodic session validation. The tradeoff is delayed session invalidation visibility (up to token expiry time) in exchange for significantly better performance under load.
 - **Comprehensive Security Logging**: Security events are systematically logged and available both to users (for their own activity) and administrators, improving transparency and aiding in security incident response.
 - **CSRF Protection**: All non-GET endpoints are protected by CSRF tokens to prevent cross-site request forgery attacks, with a cookie-based implementation. This is enforced through a global middleware that protects all routes except those explicitly excluded (such as OAuth callbacks), ensuring consistent security across the application.
 - **Automated Token Rotation**: The system implements a scheduled token rotation mechanism that automatically refreshes sessions nearing expiration, enhancing security without disrupting user experience. This helps prevent session hijacking while maintaining seamless authentication.
@@ -344,7 +344,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 **Authentication & Security**
 
 - Authentication system with Google OAuth integration
-- Session management with JWT and refresh tokens
+- Scalable session management with performance-optimized JWT validation
 - CSRF protection for all endpoints
 - Device management with trust status and removal capabilities
 - Privacy Policy and Terms of Service templates

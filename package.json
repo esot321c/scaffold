@@ -1,6 +1,6 @@
 {
   "name": "scaffold",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "_versionNotes": "When updating version, also update: packages/backend/src/app.service.ts, CHANGELOG.md, README.md badge",
   "description": "An enterprise-grade TypeScript foundation for building secure, monitored, and scalable modern web applications.",
   "scripts": {

@@ -5,6 +5,33 @@ All notable changes to the Scaffold project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2025-05-25
+
+### Performance
+
+- **Authentication Scalability Optimization**: Refactored authentication to eliminate per-request database queries
+  - JWT strategy now validates tokens without session database lookups
+  - Sessions remain long-lived (60 days) with periodic rather than continuous validation
+  - Significantly improved performance for authenticated endpoints under load
+
+### Changed
+
+- Frontend auth context updated to work with optimized session handling
+- Reduced frequency of session validation API calls
+- Simplified token refresh flow to reduce server load
+
+### Security Tradeoffs
+
+- Session invalidation now has delayed visibility (up to token expiry time)
+- Compromised sessions may remain active until next token refresh cycle
+- Maintained all authentication context protections and CSRF safeguards
+
+### Migration Notes
+
+- No breaking API changes for existing integrations
+- Existing sessions remain valid during upgrade
+- Monitor session invalidation workflows if using admin session termination features
+
 ## [0.14.1] - 2025-05-21
 
 ### Added
