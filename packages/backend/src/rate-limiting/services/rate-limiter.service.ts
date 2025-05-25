@@ -10,7 +10,6 @@ import { LoggingService } from '@/logging/services/logging.service';
 export interface RateLimitRule {
   limit: number;
   windowSecs: number;
-  fallbackToIp: boolean;
 }
 
 /**
@@ -43,14 +42,12 @@ export class RateLimiterService implements OnModuleInit {
     this.rules.set('^/auth/.*', {
       limit: 10,
       windowSecs: 60,
-      fallbackToIp: true,
     });
     this.rules.set('^/admin/.*', {
       limit: 30,
       windowSecs: 60,
-      fallbackToIp: false,
     });
-    this.rules.set('.*', { limit: 60, windowSecs: 60, fallbackToIp: true });
+    this.rules.set('.*', { limit: 60, windowSecs: 60 });
   }
 
   /**
@@ -101,7 +98,6 @@ export class RateLimiterService implements OnModuleInit {
       this.rules.set('^/auth/.*', {
         limit,
         windowSecs: 60,
-        fallbackToIp: true,
       });
     }
 
@@ -110,7 +106,6 @@ export class RateLimiterService implements OnModuleInit {
       this.rules.set('^/admin/.*', {
         limit,
         windowSecs: 60,
-        fallbackToIp: false,
       });
     }
 
@@ -119,7 +114,6 @@ export class RateLimiterService implements OnModuleInit {
       this.rules.set('.*', {
         limit,
         windowSecs: 60,
-        fallbackToIp: true,
       });
     }
 
@@ -176,7 +170,7 @@ export class RateLimiterService implements OnModuleInit {
 
       if (userId) {
         key = `ratelimit:user:${userId}:${path}`;
-      } else if (ip && rule.fallbackToIp) {
+      } else if (ip) {
         key = `ratelimit:ip:${ip}:${path}`;
       } else {
         // If we can't identify the requester, allow the request
@@ -304,7 +298,6 @@ export class RateLimiterService implements OnModuleInit {
       this.rules.set('^/auth/.*', {
         limit: limits.auth,
         windowSecs: 60,
-        fallbackToIp: true,
       });
     }
 
@@ -328,7 +321,6 @@ export class RateLimiterService implements OnModuleInit {
       this.rules.set('^/admin/.*', {
         limit: limits.admin,
         windowSecs: 60,
-        fallbackToIp: false,
       });
     }
 
@@ -353,7 +345,6 @@ export class RateLimiterService implements OnModuleInit {
       this.rules.set('.*', {
         limit: limits.api,
         windowSecs: 60,
-        fallbackToIp: true,
       });
     }
   }

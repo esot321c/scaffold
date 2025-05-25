@@ -6,6 +6,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { LoggingService } from '@/logging/services/logging.service';
 import { AuthEventType } from '@scaffold/types';
 import { JwtPayload } from '../strategies/jwt.strategy';
+import { UserRole } from '@/generated/prisma';
 
 interface OAuthUserData {
   provider: string;
@@ -184,19 +185,43 @@ export class AuthService {
     });
 
     if (!session || !session.isValid || new Date() > session.expiresAt) {
+      // Log failed refresh attempt
+      await this.loggingService.logSecurityEvent({
+        level: 'warn',
+        userId,
+        event: AuthEventType.SESSION_EXPIRED,
+        success: false,
+        ipAddress,
+        userAgent,
+        sessionId,
+        details: {
+          reason: session
+            ? session.isValid
+              ? 'session_expired'
+              : 'session_invalid'
+            : 'session_not_found',
+          refreshAttempt: true,
+        },
+      });
       throw new UnauthorizedException('Session expired or invalid');
     }
 
-    // Update session last active time
+    // Update session activity
     await this.prisma.session.update({
       where: { id: sessionId },
       data: { lastActiveAt: new Date() },
     });
 
-    // Generate new JWT
-    const accessToken = this.generateJwtToken(session.user, sessionId);
+    // Generate new access token with user role
+    const accessToken = this.generateJwtToken(
+      {
+        id: session.user.id,
+        email: session.user.email,
+        role: session.user.role,
+      },
+      sessionId,
+    );
 
-    // Log token refresh with the information we have
     await this.loggingService.logSecurityEvent({
       level: 'info',
       userId,
@@ -205,10 +230,7 @@ export class AuthService {
       ipAddress,
       userAgent,
       sessionId,
-      details: {
-        tokenType: 'access',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
+      details: { tokenType: 'access' },
     });
 
     return {
@@ -272,9 +294,9 @@ export class AuthService {
   }
 
   async createSession(userId: string, ipAddress?: string, userAgent?: string) {
-    // Calculate expiration (1 week from now)
+    // Calculate expiration (60 days from now)
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setDate(expiresAt.getDate() + 60);
 
     // If we have IP and user agent, check for existing valid sessions from the same client
     if (ipAddress && userAgent) {
@@ -328,13 +350,14 @@ export class AuthService {
    * @returns Signed JWT token
    */
   generateJwtToken(
-    user: { id: string; email: string },
+    user: { id: string; email: string; role: UserRole },
     sessionId: string,
     forCookie: boolean = true,
   ): string {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
+      role: user.role,
       sessionId,
       authType: forCookie ? 'cookie' : 'bearer',
     };

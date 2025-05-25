@@ -20,8 +20,13 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { User } from 'src/generated/prisma';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthEventType, UserRole, UserWithSession } from '@scaffold/types';
-import { RequestWithUser } from './interfaces/user-request.interface';
+import {
+  AuthEventType,
+  SecurityLog,
+  UserRole,
+  UserWithSession,
+} from '@scaffold/types';
+import { JwtUser, RequestWithUser } from './interfaces/user-request.interface';
 import { DeviceService } from '../auth/services/device.service';
 import { DeviceInfoDto } from 'src/auth/dto/mobile-auth.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -44,28 +49,33 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT')
   async getProfile(
-    @Req() req: RequestWithUser,
-    @CurrentUser() user: User,
+    @CurrentUser()
+    jwtUser: JwtUser,
   ): Promise<UserWithSession> {
-    const sessionId = req.user?.sessionId;
+    // Since we're no longer validating sessions on every request,
+    // fetch fresh user data and session info
+    const user = await this.prisma.user.findUnique({
+      where: { id: jwtUser.id },
+    });
 
-    if (!sessionId) {
-      throw new UnauthorizedException('No session ID found in JWT token');
+    if (!user) {
+      throw new UnauthorizedException('User not found');
     }
 
     const session = await this.prisma.session.findUnique({
-      where: { id: sessionId },
+      where: { id: jwtUser.sessionId },
       select: {
         id: true,
         expiresAt: true,
         lastActiveAt: true,
         ipAddress: true,
         userAgent: true,
+        isValid: true,
       },
     });
 
-    if (!session) {
-      throw new UnauthorizedException('Session not found or has expired');
+    if (!session || !session.isValid) {
+      throw new UnauthorizedException('Session not found or invalid');
     }
 
     return {
@@ -182,7 +192,7 @@ export class UsersController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('type') type?: string,
     @Query('from') from?: string,
-  ) {
+  ): Promise<SecurityLog[]> {
     // Parse the from date if provided
     const fromDate = from ? new Date(from) : undefined;
 

@@ -19,7 +19,7 @@ import { AuthCookieService } from './services/auth-cookie.service';
     JwtModule.registerAsync({
       useFactory: (config: AppConfig) => ({
         secret: config.auth.jwtSecret,
-        signOptions: { expiresIn: '7d' },
+        signOptions: { expiresIn: '2h' },
       }),
       inject: [AppConfig],
     }),

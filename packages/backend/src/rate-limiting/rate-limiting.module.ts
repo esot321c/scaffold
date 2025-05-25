@@ -18,7 +18,7 @@ import { LoggingModule } from '@/logging/logging.module';
       useClass: RateLimiterGuard,
     },
   ],
-  exports: [RateLimiterService],
+  exports: [RateLimiterService, RateLimiterGuard],
   controllers: [RateLimitController],
 })
 export class RateLimitingModule {}

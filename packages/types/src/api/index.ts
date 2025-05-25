@@ -42,7 +42,7 @@ export interface AdminUser {
 export interface AdminUsersResponse extends PaginatedResponse<AdminUser> {}
 
 export interface BaseLog {
-  timestamp?: Date;
+  timestamp?: string;
   level: string;
   requestId?: string;
 }

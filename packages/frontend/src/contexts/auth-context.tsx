@@ -26,6 +26,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!user) return;
+
+    // Refresh token after 60 minutes (60 minutes before 2-hour expiry)
+    const refreshInterval = setInterval(
+      async () => {
+        try {
+          await apiClient.post('auth/refresh');
+          // Token is automatically updated via cookie
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          // Force re-login if refresh fails
+          setUser(null);
+          setError('Session expired, please login again');
+        }
+      },
+      60 * 60 * 1000,
+    ); // 60 minutes
+
+    return () => clearInterval(refreshInterval);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const handleFocus = async () => {
+      try {
+        // Only refresh if we haven't refreshed recently
+        // This prevents unnecessary refreshes if user is actively using the app
+        const lastRefresh = localStorage.getItem('lastTokenRefresh');
+        const now = Date.now();
+        const fifteenMinutes = 15 * 60 * 1000;
+
+        if (!lastRefresh || now - parseInt(lastRefresh) > fifteenMinutes) {
+          await apiClient.post('auth/refresh');
+          localStorage.setItem('lastTokenRefresh', now.toString());
+        }
+      } catch (error) {
+        console.error('Focus token refresh failed:', error);
+        setUser(null);
+        setError('Session expired, please login again');
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        handleFocus();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [user]);
+
   const fetchUser = async () => {
     try {
       setIsLoading(true);

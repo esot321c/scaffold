@@ -5,27 +5,17 @@ import { formatDistanceToNow } from 'date-fns';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-
-interface ActivityLogItem {
-  id: string;
-  event: string;
-  successful: boolean;
-  ipAddress: string | null;
-  userAgent: string | null;
-  createdAt: string;
-  details: any;
-}
+import type { SecurityLog } from '@scaffold/types';
 
 export function ActivityLog() {
-  const [activities, setActivities] = useState<ActivityLogItem[]>([]);
+  const [activities, setActivities] = useState<SecurityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
         setLoading(true);
-        const response =
-          await apiClient.get<ActivityLogItem[]>('users/activity');
+        const response = await apiClient.get<SecurityLog[]>('users/activity');
         setActivities(response);
       } catch (error) {
         toast.error('Failed to load activity log');
@@ -87,7 +77,7 @@ export function ActivityLog() {
                   className="flex items-start justify-between p-4 rounded-lg border"
                 >
                   <div className="flex items-start space-x-3">
-                    {activity.successful ? (
+                    {activity.success ? (
                       <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
                     ) : (
                       <XCircle className="h-5 w-5 text-red-500 mt-0.5" />
@@ -95,14 +85,12 @@ export function ActivityLog() {
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
                         <Badge
-                          variant={
-                            activity.successful ? 'default' : 'destructive'
-                          }
+                          variant={activity.success ? 'default' : 'destructive'}
                         >
                           {getEventLabel(activity.event)}
                         </Badge>
                         <span className="text-muted-foreground text-sm">
-                          {formatDate(activity.createdAt)}
+                          {activity.timestamp && formatDate(activity.timestamp)}
                         </span>
                       </div>
                       {activity.ipAddress && (

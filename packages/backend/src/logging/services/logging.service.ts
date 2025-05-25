@@ -775,6 +775,9 @@ export class LoggingService implements OnModuleInit {
       .lean()
       .exec();
 
-    return logs;
+    return logs.map(({ _id, ...rest }) => ({
+      ...rest,
+      id: _id?.toString(),
+    }));
   }
 }

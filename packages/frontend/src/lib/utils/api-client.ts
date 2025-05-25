@@ -33,6 +33,34 @@ async function request<T>(
       credentials: 'include', // Important for cookies
     });
 
+    // Handle 401 with automatic retry
+    if (response.status === 401 && !endpoint.includes('auth/refresh')) {
+      try {
+        // Try to refresh token
+        await fetch(`${API_URL}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        // Retry original request
+        const retryResponse = await fetch(`${API_URL}/${endpoint}`, {
+          ...options,
+          headers,
+          credentials: 'include',
+        });
+
+        if (retryResponse.ok) {
+          return retryResponse.status === 204
+            ? ({} as T)
+            : retryResponse.json();
+        }
+      } catch (refreshError) {
+        // Refresh failed, redirect to login
+        window.location.href = '/login?error=session_expired';
+        throw createApiError('Session expired', 401);
+      }
+    }
+
     if (!response.ok) {
       // Try to get error message from response
       let errorMessage = 'An unknown error occurred';
