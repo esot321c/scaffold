@@ -11,6 +11,7 @@ This document outlines the API design patterns and conventions used throughout t
 3. **Type Safety Everywhere** - Leverage TypeScript's type system to catch errors at compile time
 4. **Consistent Error Handling** - Use standardized error responses across all endpoints
 5. **Proper Documentation** - Every endpoint should have complete Swagger documentation
+6. **Flexible Pagination** - Each endpoint chooses the most appropriate pagination strategy
 
 ## Request/Response Patterns
 
@@ -78,6 +79,150 @@ export class PublicUserDto {
 }
 ```
 
+## Pagination Patterns
+
+### Flexible Per-Endpoint Pagination
+
+Each endpoint should choose the most appropriate pagination strategy based on its use case:
+
+#### No Pagination (Small, Bounded Collections)
+
+```typescript
+// ✅ Small collections - Return array directly
+@Get('roles')
+async getRoles(): Promise<Role[]> {
+  return this.rolesService.findAll();
+}
+```
+
+#### Offset-Based Pagination (Admin Tables, Reports)
+
+```typescript
+// ✅ Traditional pagination for admin interfaces
+@Get('users')
+async getUsers(
+  @Query() paginationDto: OffsetPaginationDto,
+): Promise<PaginatedResponse<User>> {
+  return {
+    data: users,
+    pagination: {
+      type: 'offset',
+      total: 1000,
+      page: 1,
+      limit: 20,
+      pages: 50
+    }
+  };
+}
+```
+
+#### Cursor-Based Pagination (Feeds, Real-time Data)
+
+```typescript
+// ✅ Cursor pagination for feeds and large datasets
+@Get('activities')
+async getActivities(
+  @Query() paginationDto: CursorPaginationDto,
+): Promise<PaginatedResponse<Activity>> {
+  return {
+    data: activities,
+    pagination: {
+      type: 'cursor',
+      hasNextPage: true,
+      hasPreviousPage: false,
+      startCursor: 'abc123',
+      endCursor: 'xyz789'
+    }
+  };
+}
+```
+
+### Pagination Type Definitions
+
+```typescript
+// Base response structure
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: OffsetPagination | CursorPagination;
+}
+
+// Traditional offset pagination
+export interface OffsetPagination {
+  type: 'offset';
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+// Cursor-based pagination
+export interface CursorPagination {
+  type: 'cursor';
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  startCursor?: string;
+  endCursor?: string;
+}
+```
+
+### Pagination Input DTOs
+
+```typescript
+export class OffsetPaginationDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
+}
+
+export class CursorPaginationDto {
+  @IsOptional()
+  @IsString()
+  after?: string;
+
+  @IsOptional()
+  @IsString()
+  before?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  first?: number = 20;
+}
+```
+
+### Pagination Best Practices
+
+1. **Choose the right pattern:**
+
+   - **Offset pagination** for admin tables, reports, or when users need to jump to specific pages
+   - **Cursor pagination** for feeds, activity streams, or real-time data where consistency matters
+   - **No pagination** for small, bounded collections (< 100 items)
+
+2. **Always validate limits:**
+
+   - Set reasonable defaults (20-50 items)
+   - Enforce maximum limits (100 items max)
+   - Provide clear error messages for invalid ranges
+
+3. **Include metadata:**
+
+   - Total counts for offset pagination
+   - Next/previous indicators for cursor pagination
+   - Clear pagination type discrimination
+
+4. **Performance considerations:**
+   - Use database indexes for cursor fields
+   - Avoid `COUNT(*)` queries for large datasets in cursor pagination
+   - Consider caching for frequently accessed pages
+
 ## Database Patterns
 
 ### Query Optimization
@@ -112,24 +257,55 @@ const users = await this.prisma.user.findMany({
 });
 ```
 
-**Use pagination for large datasets:**
+**Implement pagination efficiently:**
 
 ```typescript
-// ✅ Good - Paginated response
+// ✅ Good - Efficient offset pagination
 async getUsers(page: number, limit: number): Promise<PaginatedResponse<User>> {
   const skip = (page - 1) * limit;
   const [users, total] = await Promise.all([
-    this.prisma.user.findMany({ skip, take: limit }),
+    this.prisma.user.findMany({
+      skip,
+      take: limit,
+      select: { id: true, email: true, name: true }
+    }),
     this.prisma.user.count(),
   ]);
 
   return {
     data: users,
     pagination: {
+      type: 'offset',
       total,
       page,
       limit,
       pages: Math.ceil(total / limit),
+    },
+  };
+}
+
+// ✅ Good - Efficient cursor pagination
+async getActivitiesCursor(after?: string, limit: number = 20): Promise<PaginatedResponse<Activity>> {
+  const activities = await this.prisma.activity.findMany({
+    take: limit + 1, // Take one extra to check hasNextPage
+    ...(after && {
+      cursor: { id: after },
+      skip: 1, // Skip the cursor item
+    }),
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const hasNextPage = activities.length > limit;
+  const data = hasNextPage ? activities.slice(0, -1) : activities;
+
+  return {
+    data,
+    pagination: {
+      type: 'cursor',
+      hasNextPage,
+      hasPreviousPage: !!after,
+      startCursor: data[0]?.id,
+      endCursor: data[data.length - 1]?.id,
     },
   };
 }
@@ -241,7 +417,8 @@ src/
 │   ├── dto/
 │   │   ├── create-user.dto.ts      # Input DTOs only
 │   │   ├── update-user.dto.ts
-│   │   └── user-filter.dto.ts
+│   │   ├── user-filter.dto.ts
+│   │   └── pagination.dto.ts       # Pagination DTOs
 │   ├── users.controller.ts
 │   ├── users.service.ts
 │   └── users.module.ts
@@ -253,10 +430,15 @@ All response types live in `packages/types/src/`:
 
 ```
 packages/types/src/
-├── api.types.ts          # API response interfaces
-├── user.types.ts         # User-related interfaces
-├── system.types.ts       # System health, config interfaces
-└── index.ts              # Export all types
+├── api/
+│   ├── pagination.types.ts    # Pagination interfaces
+│   └── responses.types.ts     # API response interfaces
+├── admin/
+│   ├── users.types.ts         # Admin user interfaces
+│   └── system.types.ts        # System interfaces
+├── user.types.ts              # User-related interfaces
+├── system.types.ts            # System health, config interfaces
+└── index.ts                   # Export all types
 ```
 
 ## Migration Strategy
@@ -264,10 +446,11 @@ packages/types/src/
 When updating existing controllers:
 
 1. **Add input DTOs** where missing (especially for POST/PUT/PATCH)
-2. **Remove response DTOs** that just mirror shared types
+2. **Choose appropriate pagination strategy** based on use case
 3. **Update return types** to use shared interfaces
 4. **Add proper Swagger documentation**
 5. **Fix any N+1 queries or missing projections**
+6. **Remove unnecessary response DTOs** that just mirror shared types
 
 ## Examples
 
@@ -278,12 +461,12 @@ When updating existing controllers:
 - Proper error handling
 - Complete Swagger docs
 
-### ✅ Good Service Layer
+### ✅ Good Pagination Implementation
 
-- Optimized database queries
-- Type-safe operations
-- Proper error handling
-- No business logic in controllers
+- Chooses appropriate pagination type for use case
+- Efficient database queries
+- Proper input validation
+- Clear response structure
 
 ### ❌ Anti-patterns to Avoid
 
@@ -291,7 +474,9 @@ When updating existing controllers:
 - Manual error response formatting
 - N+1 database queries
 - Missing input validation
-- Inconsistent response formats
+- Inconsistent pagination approaches
+- Using offset pagination for large, frequently changing datasets
+- Using cursor pagination for admin tables that need page jumping
 
 ---
 
@@ -300,6 +485,7 @@ When updating existing controllers:
 As we update controllers, we should:
 
 1. Follow these patterns consistently
-2. Update this document when we discover better approaches
-3. Add examples of complex scenarios as we encounter them
-4. Consider tooling/linting rules to enforce these patterns
+2. Choose the most appropriate pagination strategy per endpoint
+3. Update this document when we discover better approaches
+4. Add examples of complex scenarios as we encounter them
+5. Consider tooling/linting rules to enforce these patterns
