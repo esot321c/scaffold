@@ -1,5 +1,10 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { AdminGuard } from '@/admin/guards/admin.guard';
 import { SystemHealthService } from '@/monitoring/services/system-health.service';
@@ -7,24 +12,8 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { RedisService } from '@/redis/services/redis.service';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
-
-interface ServiceHealth {
-  status: 'healthy' | 'degraded' | 'down';
-  responseTime: number;
-  lastChecked: string;
-}
-
-interface SystemHealth {
-  database: ServiceHealth;
-  redis: ServiceHealth;
-  mongodb: ServiceHealth;
-  system: {
-    cpuUsage: number;
-    memoryUsage: number;
-    diskUsage: number;
-    lastChecked: string;
-  };
-}
+import { SystemHealth, ServiceHealth } from '@scaffold/types';
+import { SystemHealthResponseDto } from '../dto/health.dto';
 
 @ApiTags('admin')
 @Controller('admin/health')
@@ -39,7 +28,20 @@ export class HealthController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get system health status' })
+  @ApiOperation({
+    summary: 'Get comprehensive system health status',
+    description:
+      'Returns health status for all system components including database, Redis, MongoDB, and system resources',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'System health status retrieved successfully',
+    type: SystemHealthResponseDto,
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'One or more system components are unhealthy',
+  })
   async getSystemHealth(): Promise<SystemHealth> {
     const now = new Date().toISOString();
 

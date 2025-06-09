@@ -10,12 +10,21 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { LoggingService } from '@/logging/services/logging.service';
 import { AdminGuard } from '@/admin/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AdminUser, OffsetPaginatedResponse, UserRole } from '@scaffold/types';
+import {
+  AdminUsersResponseDto,
+  UpdateUserRoleResponseDto,
+} from '../dto/users.dto';
 
 @ApiTags('admin')
 @Controller('admin/users')
@@ -29,6 +38,11 @@ export class AdminUsersController {
 
   @Get()
   @ApiOperation({ summary: 'Get all users with basic stats' })
+  @ApiResponse({
+    status: 200,
+    description: 'Users retrieved successfully',
+    type: AdminUsersResponseDto,
+  })
   async getAllUsers(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
@@ -92,6 +106,15 @@ export class AdminUsersController {
 
   @Put(':id/role')
   @ApiOperation({ summary: 'Update user role' })
+  @ApiResponse({
+    status: 200,
+    description: 'User role updated successfully',
+    type: UpdateUserRoleResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid role or cannot change super admin role',
+  })
   async updateUserRole(
     @Param('id') id: string,
     @Body() data: { role: UserRole },

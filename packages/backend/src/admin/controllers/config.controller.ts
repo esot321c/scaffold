@@ -19,8 +19,11 @@ import {
 } from '@nestjs/swagger';
 import { LogRetentionSettings } from '@scaffold/types';
 import { ConfigService } from '../services/config.service';
-import { UpdateLogRetentionDto } from '../dto/log-retention.dto';
-import { UpdateLoggingConfigDto } from '../dto/logging-config.dto';
+import {
+  LogRetentionSettingsResponseDto,
+  UpdateLoggingConfigDto,
+  UpdateLogRetentionDto,
+} from '../dto/config.dto';
 
 @ApiTags('admin/config')
 @Controller('admin/config')
@@ -34,7 +37,7 @@ export class ConfigController {
   @ApiResponse({
     status: 200,
     description: 'Log retention settings retrieved successfully',
-    type: 'LogRetentionSettings',
+    type: LogRetentionSettingsResponseDto,
   })
   async getLogRetentionSettings(): Promise<LogRetentionSettings> {
     return this.configService.getLogRetentionSettings();
@@ -46,7 +49,7 @@ export class ConfigController {
   @ApiResponse({
     status: 200,
     description: 'Log retention settings updated successfully',
-    type: 'LogRetentionSettings',
+    type: LogRetentionSettingsResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -65,7 +68,7 @@ export class ConfigController {
   @ApiResponse({
     status: 200,
     description: 'Logging configuration updated successfully',
-    type: 'LogRetentionSettings',
+    type: LogRetentionSettingsResponseDto,
   })
   @ApiResponse({
     status: 400,

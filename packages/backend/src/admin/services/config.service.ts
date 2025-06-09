@@ -7,8 +7,10 @@ import {
   CONFIG_KEYS,
   LogRetentionSettings,
 } from '@scaffold/types';
-import { UpdateLogRetentionDto } from '../dto/log-retention.dto';
-import { UpdateLoggingConfigDto } from '../dto/logging-config.dto';
+import {
+  UpdateLoggingConfigDto,
+  UpdateLogRetentionDto,
+} from '../dto/config.dto';
 
 @Injectable()
 export class ConfigService {
