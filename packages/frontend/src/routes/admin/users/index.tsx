@@ -25,7 +25,7 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AdminUsersResponse } from '@scaffold/types';
+import type { AdminUser, OffsetPaginatedResponse } from '@scaffold/types';
 
 export const Route = createFileRoute('/admin/users/')({
   component: UserManagement,
@@ -37,7 +37,8 @@ function UserManagement() {
   // Query for fetching users
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin', 'users'],
-    queryFn: () => apiClient.get<AdminUsersResponse>('admin/users'),
+    queryFn: () =>
+      apiClient.get<OffsetPaginatedResponse<AdminUser>>('admin/users'),
   });
 
   // Extract users array from the response

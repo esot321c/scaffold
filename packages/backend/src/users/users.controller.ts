@@ -80,8 +80,15 @@ export class UsersController {
 
     return {
       ...user,
+      lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+      createdAt: user.createdAt?.toISOString(),
+      updatedAt: user.updatedAt?.toISOString(),
       role: user.role as unknown as UserRole, // make sure to update the type if the db enum changes
-      session: session,
+      session: {
+        ...session,
+        expiresAt: session.expiresAt.toISOString(), // Date -> string
+        lastActiveAt: session.lastActiveAt.toISOString(),
+      },
     };
   }
 

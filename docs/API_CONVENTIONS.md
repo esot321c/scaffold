@@ -13,6 +13,73 @@ This document outlines the API design patterns and conventions used throughout t
 5. **Proper Documentation** - Every endpoint should have complete Swagger documentation
 6. **Flexible Pagination** - Each endpoint chooses the most appropriate pagination strategy
 
+## HTTP Status Codes as API Contract
+
+### Use 204 No Content for Action Endpoints
+
+When an endpoint performs an action but has no meaningful data to return, use HTTP 204:
+
+```typescript
+// ✅ Good - Action completed, no data to return
+@Post('test')
+@HttpCode(204)
+@ApiOperation({ summary: 'Send a test notification' })
+async sendTestNotification(@CurrentUser() user: User): Promise<void> {
+  await this.notificationsService.triggerNotification(/* ... */);
+  // No return statement needed
+}
+
+// ✅ Good - Frontend handles 204 automatically
+const testMutation = useMutation({
+  mutationFn: () => apiClient.post('admin/notifications/test'),
+  onSuccess: () => toast.success('Action completed'),
+});
+```
+
+**Perfect for:**
+
+- Test/validation actions
+- Delete operations
+- Toggle/enable/disable actions
+- Logout endpoints
+- Any "fire and forget" commands
+
+### Avoid Meaningless Success Objects
+
+```typescript
+// ❌ Bad - Boilerplate noise
+return { success: true, message: 'Action completed' };
+
+// ✅ Good - Let HTTP status communicate success
+// (204 = success, 4xx/5xx = failure)
+```
+
+### When NOT to Use 204
+
+Use proper data responses when you have meaningful data:
+
+```typescript
+// ✅ Good - Return created resource
+@Post()
+async createUser(@Body() dto: CreateUserDto): Promise<User> {
+  return this.usersService.create(dto);
+}
+
+// ✅ Good - Return updated resource
+@Put(':id')
+async updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto): Promise<User> {
+  return this.usersService.update(id, dto);
+}
+```
+
+### Status Code Guidelines
+
+- **200** - Success with data
+- **201** - Resource created (return the created resource)
+- **204** - Action completed, no data to return
+- **4xx** - Client error (handled by global exception filter)
+- **5xx** - Server error (handled by global exception filter)
+
 ## Request/Response Patterns
 
 ### Input (Request) DTOs

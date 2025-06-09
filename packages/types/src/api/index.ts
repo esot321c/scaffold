@@ -1,20 +1,11 @@
+export * from './pagination.types.js';
+
 import { AuthEventType } from '../enums/index.js';
-import { AdminUser } from './admin.js';
 
 export interface ApiResponse<T> {
   data: T;
   status: number;
   message?: string;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-  };
 }
 
 export interface ApiStatus {

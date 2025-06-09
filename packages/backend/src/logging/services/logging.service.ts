@@ -9,6 +9,7 @@ import {
   ApiLog,
   ApiLogFilter,
   AuthEventType,
+  OffsetPaginatedResponse,
   PaginatedResponse,
   SecurityLog,
   SecurityLogFilter,
@@ -417,7 +418,7 @@ export class LoggingService implements OnModuleInit {
    */
   async getSecurityLogs(
     filter: SecurityLogFilter,
-  ): Promise<PaginatedResponse<SecurityLog>> {
+  ): Promise<OffsetPaginatedResponse<SecurityLog>> {
     const {
       page = 1,
       limit = 50,
@@ -527,6 +528,7 @@ export class LoggingService implements OnModuleInit {
     return {
       data: enrichedLogs,
       pagination: {
+        type: 'offset',
         total,
         page,
         limit,
@@ -538,7 +540,9 @@ export class LoggingService implements OnModuleInit {
   /**
    * Get API logs with pagination and filtering
    */
-  async getApiLogs(filter: ApiLogFilter): Promise<PaginatedResponse<ApiLog>> {
+  async getApiLogs(
+    filter: ApiLogFilter,
+  ): Promise<OffsetPaginatedResponse<ApiLog>> {
     const {
       page = 1,
       limit = 50,
@@ -593,6 +597,7 @@ export class LoggingService implements OnModuleInit {
     return {
       data: logs,
       pagination: {
+        type: 'offset',
         total,
         page,
         limit,

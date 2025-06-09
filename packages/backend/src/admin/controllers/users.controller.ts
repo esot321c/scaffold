@@ -12,11 +12,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { LoggingService } from '@/logging/services/logging.service';
-import { AdminUser, PaginatedResponse } from '@scaffold/types';
 import { AdminGuard } from '@/admin/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { UserRole } from '@/generated/prisma';
 import { PrismaService } from '@/prisma/prisma.service';
+import { AdminUser, OffsetPaginatedResponse, UserRole } from '@scaffold/types';
 
 @ApiTags('admin')
 @Controller('admin/users')
@@ -33,63 +32,56 @@ export class AdminUsersController {
   async getAllUsers(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
-  ): Promise<PaginatedResponse<AdminUser>> {
+  ): Promise<OffsetPaginatedResponse<AdminUser>> {
     const skip = (page - 1) * limit;
 
-    // Get total count for pagination
-    const totalUsers = await this.prisma.user.count();
-
-    // Find users with pagination
-    const users = await this.prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        _count: {
-          select: {
-            sessions: {
-              where: {
-                isValid: true,
-                expiresAt: {
-                  gt: new Date(),
+    // Get total count and users with session count in parallel
+    const [totalUsers, users] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          createdAt: true,
+          lastLoginAt: true,
+          _count: {
+            select: {
+              sessions: {
+                where: {
+                  isValid: true,
+                  expiresAt: {
+                    gt: new Date(),
+                  },
                 },
               },
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take: limit,
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    // Get all user IDs
-    const userIds = users.map((user) => user.id);
-
-    // Get last login for each user using the optimized method
-    const lastLoginMap = await this.loggingService.getLastLoginByUsers(userIds);
-
-    // Transform the data into the expected format with ISO string dates
+    // Transform to AdminUser format
     const formattedUsers: AdminUser[] = users.map((user) => ({
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN', // Cast to shared type enum
-      createdAt: user.createdAt.toISOString(), // Convert Date to ISO string
-      lastLoginAt: lastLoginMap.get(user.id)
-        ? lastLoginMap.get(user.id)!.toISOString()
-        : null,
+      role: user.role as UserRole, // Type assertion for enum
+      createdAt: user.createdAt.toISOString(),
+      lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       sessionCount: user._count.sessions,
     }));
 
-    // Return with pagination info using the shared type
     return {
       data: formattedUsers,
       pagination: {
+        type: 'offset',
         total: totalUsers,
         page,
         limit,

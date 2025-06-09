@@ -16,13 +16,6 @@ export enum AuthEventType {
   SUSPICIOUS_AUTH_ACTIVITY = 'suspicious_auth_activity',
 }
 
-// Prisma Enum on backend
-export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-  SUPER_ADMIN = 'SUPER_ADMIN',
-}
-
 export enum SystemEventType {
   // Service health
   SERVICE_DOWN = 'service_down',

@@ -1,4 +1,12 @@
-import { Controller, Get, Put, Body, UseGuards, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Body,
+  UseGuards,
+  Post,
+  HttpCode,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { AdminGuard } from '@/admin/guards/admin.guard';
@@ -39,6 +47,7 @@ export class AdminNotificationsController {
   }
 
   @Post('test')
+  @HttpCode(204)
   @ApiOperation({ summary: 'Send a test notification' })
   async sendTestNotification(@CurrentUser() user: User): Promise<void> {
     await this.notificationsService.triggerNotification(
