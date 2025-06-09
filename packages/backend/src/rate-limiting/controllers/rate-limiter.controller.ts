@@ -12,7 +12,7 @@ class UpdateRateLimitsDto {
   api?: number;
 }
 
-@ApiTags('admin')
+@ApiTags('Admin')
 @Controller('admin/rate-limits')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')

@@ -24,7 +24,7 @@ import {
   SecurityLog,
 } from '@scaffold/types';
 
-@ApiTags('admin/logging')
+@ApiTags('Admin')
 @Controller('admin/logging')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')

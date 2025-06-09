@@ -15,7 +15,7 @@ import { Connection } from 'mongoose';
 import { SystemHealth, ServiceHealth } from '@scaffold/types';
 import { SystemHealthResponseDto } from '../dto/health.dto';
 
-@ApiTags('admin')
+@ApiTags('Admin')
 @Controller('admin/health')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')

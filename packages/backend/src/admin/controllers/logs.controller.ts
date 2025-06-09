@@ -24,7 +24,7 @@ import * as os from 'os';
 import { LoggingService } from '@/logging/services/logging.service';
 import { AuthEventType, PaginatedResponse, SecurityLog } from '@scaffold/types';
 
-@ApiTags('admin')
+@ApiTags('Admin')
 @Controller('admin/logs')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')

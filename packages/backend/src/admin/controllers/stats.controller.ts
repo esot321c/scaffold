@@ -6,7 +6,7 @@ import { LoggingService } from '@/logging/services/logging.service';
 import { AdminGuard } from '@/admin/guards/admin.guard';
 import { AuthEventType } from '@scaffold/types';
 
-@ApiTags('admin')
+@ApiTags('Admin')
 @Controller('admin/stats')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')

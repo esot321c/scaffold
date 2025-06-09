@@ -34,7 +34,7 @@ import { AuthCookieService } from '@/auth/services/auth-cookie.service';
 import { LoggingService } from '@/logging/services/logging.service';
 import { Request } from 'express';
 
-@ApiTags('users')
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(

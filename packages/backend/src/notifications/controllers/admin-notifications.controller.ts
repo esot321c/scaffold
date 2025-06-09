@@ -16,7 +16,7 @@ import { NotificationsService } from '../services/notifications.service';
 import { UpdateNotificationSettingsDto } from '../dto/update-notification-settings.dto';
 import { AdminNotificationSettings, SystemEventType } from '@scaffold/types';
 
-@ApiTags('admin/notifications')
+@ApiTags('Admin')
 @Controller('admin/notifications')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')

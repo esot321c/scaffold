@@ -26,7 +26,7 @@ import {
   UpdateUserRoleResponseDto,
 } from '../dto/users.dto';
 
-@ApiTags('admin')
+@ApiTags('Admin')
 @Controller('admin/users')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')

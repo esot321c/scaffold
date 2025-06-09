@@ -25,7 +25,7 @@ import {
   UpdateLogRetentionDto,
 } from '../dto/config.dto';
 
-@ApiTags('admin/config')
+@ApiTags('Admin')
 @Controller('admin/config')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT')
