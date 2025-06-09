@@ -1,4 +1,5 @@
 import { AuthEventType } from '../enums/index.js';
+import { AdminUser } from './admin.js';
 
 export interface ApiResponse<T> {
   data: T;
@@ -21,25 +22,6 @@ export interface ApiStatus {
   timestamp: string;
   version: string;
 }
-
-export interface LogRetentionSettings {
-  securityLogDays: number;
-  apiLogDays: number;
-  mongoEnabled: boolean;
-  fileEnabled: boolean;
-}
-
-export interface AdminUser {
-  id: string;
-  email: string;
-  name: string | null;
-  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
-  createdAt: string; // ISO string representation of date
-  lastLoginAt: string | null; // ISO string or null
-  sessionCount: number;
-}
-
-export interface AdminUsersResponse extends PaginatedResponse<AdminUser> {}
 
 export interface BaseLog {
   timestamp?: string;

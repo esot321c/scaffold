@@ -7,10 +7,11 @@ import { LogsController } from './controllers/logs.controller';
 import { HealthController } from './controllers/health.controller';
 import { SystemHealthService } from '@/monitoring/services/system-health.service';
 import { RedisService } from '@/redis/services/redis.service';
+import { ConfigService } from './services/config.service';
 
 @Module({
   imports: [PrismaModule],
-  providers: [SystemHealthService, RedisService],
+  providers: [ConfigService, SystemHealthService, RedisService],
   controllers: [
     ConfigController,
     AdminUsersController,
