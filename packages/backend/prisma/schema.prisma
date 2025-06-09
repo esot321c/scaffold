@@ -85,6 +85,7 @@ model User {
   phone           String?   
   address         String?   
   website         String?   
+  lastLoginAt     DateTime? @map("last_login_at") 
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt      @map("updated_at")
   role            UserRole  @default(USER) @map("user_role")
