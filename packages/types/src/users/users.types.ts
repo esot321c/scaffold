@@ -1,4 +1,3 @@
-// Core user enums and types
 export enum UserRole {
   USER = 'USER',
   ADMIN = 'ADMIN',
@@ -20,12 +19,15 @@ export interface User {
   updatedAt: string;
 }
 
+export interface UserSession {
+  id: string;
+  expiresAt: string;
+  createdAt: string;
+  lastActiveAt: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+}
+
 export interface UserWithSession extends User {
-  session: {
-    id: string;
-    expiresAt: string;
-    lastActiveAt: string;
-    ipAddress: string | null;
-    userAgent: string | null;
-  };
+  session: UserSession;
 }

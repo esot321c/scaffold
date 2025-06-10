@@ -52,8 +52,8 @@ export class UsersController {
     @CurrentUser()
     jwtUser: JwtUser,
   ): Promise<UserWithSession> {
-    // Since we're no longer validating sessions on every request,
-    // fetch fresh user data and session info
+    // Not validating sessions on every request,
+    // so fetch fresh user data and session info
     const user = await this.prisma.user.findUnique({
       where: { id: jwtUser.id },
     });
@@ -67,6 +67,7 @@ export class UsersController {
       select: {
         id: true,
         expiresAt: true,
+        createdAt: true,
         lastActiveAt: true,
         ipAddress: true,
         userAgent: true,
@@ -86,7 +87,8 @@ export class UsersController {
       role: user.role as unknown as UserRole, // make sure to update the type if the db enum changes
       session: {
         ...session,
-        expiresAt: session.expiresAt.toISOString(), // Date -> string
+        createdAt: session.createdAt.toISOString(), // Date -> string
+        expiresAt: session.expiresAt.toISOString(),
         lastActiveAt: session.lastActiveAt.toISOString(),
       },
     };
