@@ -15,6 +15,7 @@ export interface ApiStatus {
 }
 
 export interface BaseLog {
+  _id?: string;
   timestamp?: string;
   level: string;
   requestId?: string;

@@ -8,187 +8,192 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { LogRetentionSettings } from '@scaffold/types';
 import { Switch } from '@/components/ui/switch';
+import { Loader2 } from 'lucide-react';
+import type { LogRetentionSettings } from '@scaffold/types';
 
-// Define specific types for each mutation's parameter
-type RetentionUpdateParams = Pick<
-  LogRetentionSettings,
-  'securityLogDays' | 'apiLogDays'
->;
-type LoggingConfigUpdateParams = Pick<
-  LogRetentionSettings,
-  'mongoEnabled' | 'fileEnabled'
->;
+interface LoggingFormData {
+  securityLogDays: number;
+  apiLogDays: number;
+  mongoEnabled: boolean;
+  fileEnabled: boolean;
+}
 
 export function LoggingSettings() {
-  const [securityLogDays, setSecurityLogDays] = useState<number>(90);
-  const [apiLogDays, setApiLogDays] = useState<number>(30);
-  const [mongoEnabled, setMongoEnabled] = useState<boolean>(true);
-  const [fileEnabled, setFileEnabled] = useState<boolean>(true);
-
-  // Fetch current settings
-  const { data, isLoading, refetch } = useQuery<LogRetentionSettings>({
-    queryKey: ['admin', 'settings', 'logs'],
-    queryFn: () =>
-      apiClient.get<LogRetentionSettings>('admin/config/log-retention'),
+  const [formData, setFormData] = useState<LoggingFormData>({
+    securityLogDays: 90,
+    apiLogDays: 30,
+    mongoEnabled: true,
+    fileEnabled: true,
   });
 
-  // Handle data changes with an effect
+  // Fetch current settings
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['logs', 'config'],
+    queryFn: () => apiClient.get<LogRetentionSettings>('logs/config'),
+  });
+
+  // Update form data when query data changes
   useEffect(() => {
     if (data) {
-      setSecurityLogDays(data.securityLogDays);
-      setApiLogDays(data.apiLogDays);
-      setMongoEnabled(data.mongoEnabled);
-      setFileEnabled(data.fileEnabled);
+      setFormData({
+        securityLogDays: data.securityLogDays,
+        apiLogDays: data.apiLogDays,
+        mongoEnabled: data.mongoEnabled,
+        fileEnabled: data.fileEnabled,
+      });
     }
   }, [data]);
 
-  // Mutation for updating retention period
-  const retentionMutation = useMutation({
-    mutationFn: (data: RetentionUpdateParams) =>
-      apiClient.put<void>('admin/config/log-retention', data),
+  // Mutation for updating all settings
+  const updateMutation = useMutation({
+    mutationFn: (data: LoggingFormData) =>
+      apiClient.put<LogRetentionSettings>('logs/config', data),
     onSuccess: () => {
-      toast.success('Log retention periods updated');
+      toast.success('Logging settings updated');
       refetch();
     },
-    onError: (error) => {
-      toast.error('Failed to update retention periods');
+    onError: (error: any) => {
+      // Extract the specific error message from the API response
+      const errorMessage =
+        error?.message ?? 'Failed to update logging settings';
+      toast.error(errorMessage);
       console.error(error);
     },
   });
 
-  // Mutation for updating logging methods
-  const loggingConfigMutation = useMutation({
-    mutationFn: (data: LoggingConfigUpdateParams) =>
-      apiClient.put<void>('admin/config/logging-config', data),
-    onSuccess: () => {
-      toast.success('Logging configuration updated');
-      refetch();
-    },
-    onError: (error) => {
-      toast.error('Failed to update logging configuration');
-      console.error(error);
-    },
-  });
-
-  const handleSaveRetention = () => {
-    retentionMutation.mutate({
-      securityLogDays,
-      apiLogDays,
-    });
+  const handleInputChange = (
+    field: keyof LoggingFormData,
+    value: number | boolean,
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveLoggingConfig = () => {
-    loggingConfigMutation.mutate({
-      mongoEnabled,
-      fileEnabled,
-    });
+  const handleSave = () => {
+    updateMutation.mutate(formData);
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6 flex justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Log Settings</CardTitle>
+        <CardTitle>Logging Settings</CardTitle>
         <CardDescription>
           Configure log retention periods and logging methods
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Retention Periods</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="securityLogDays">
-                  Security Log Retention (Days)
-                </Label>
-                <Input
-                  id="securityLogDays"
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={securityLogDays}
-                  onChange={(e) => setSecurityLogDays(parseInt(e.target.value))}
-                  disabled={isLoading || retentionMutation.isPending}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="apiLogDays">API Log Retention (Days)</Label>
-                <Input
-                  id="apiLogDays"
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={apiLogDays}
-                  onChange={(e) => setApiLogDays(parseInt(e.target.value))}
-                  disabled={isLoading || retentionMutation.isPending}
-                />
-              </div>
+      <CardContent className="space-y-6">
+        {/* Retention Settings */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Retention Periods</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="securityLogDays">
+                Security Log Retention (Days)
+              </Label>
+              <Input
+                id="securityLogDays"
+                type="number"
+                min="1"
+                max="365"
+                value={formData.securityLogDays}
+                onChange={(e) =>
+                  handleInputChange('securityLogDays', parseInt(e.target.value))
+                }
+                disabled={updateMutation.isPending}
+              />
             </div>
-            <Button
-              onClick={handleSaveRetention}
-              disabled={isLoading || retentionMutation.isPending}
-            >
-              {retentionMutation.isPending
-                ? 'Saving...'
-                : 'Save Retention Settings'}
-            </Button>
+            <div className="space-y-2">
+              <Label htmlFor="apiLogDays">API Log Retention (Days)</Label>
+              <Input
+                id="apiLogDays"
+                type="number"
+                min="1"
+                max="365"
+                value={formData.apiLogDays}
+                onChange={(e) =>
+                  handleInputChange('apiLogDays', parseInt(e.target.value))
+                }
+                disabled={updateMutation.isPending}
+              />
+            </div>
           </div>
+        </div>
 
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="text-lg font-medium">Logging Methods</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="mongoEnabled" className="text-base">
-                    MongoDB Logging
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Store logs in MongoDB for long-term analysis
-                  </p>
-                </div>
-                <Switch
-                  id="mongoEnabled"
-                  checked={mongoEnabled}
-                  onCheckedChange={setMongoEnabled}
-                  disabled={isLoading || loggingConfigMutation.isPending}
-                />
+        {/* Logging Methods */}
+        <div className="space-y-4 pt-4 border-t">
+          <h3 className="text-lg font-medium">Logging Methods</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="mongoEnabled" className="text-base">
+                  MongoDB Logging
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Store logs in MongoDB for advanced querying and analysis
+                </p>
               </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="fileEnabled" className="text-base">
-                    File Logging
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Store logs in rotating log files
-                  </p>
-                </div>
-                <Switch
-                  id="fileEnabled"
-                  checked={fileEnabled}
-                  onCheckedChange={setFileEnabled}
-                  disabled={isLoading || loggingConfigMutation.isPending}
-                />
-              </div>
+              <Switch
+                id="mongoEnabled"
+                checked={formData.mongoEnabled}
+                onCheckedChange={(checked) =>
+                  handleInputChange('mongoEnabled', checked)
+                }
+                disabled={updateMutation.isPending}
+              />
             </div>
 
-            <Button
-              onClick={handleSaveLoggingConfig}
-              disabled={isLoading || loggingConfigMutation.isPending}
-            >
-              {loggingConfigMutation.isPending
-                ? 'Saving...'
-                : 'Save Logging Methods'}
-            </Button>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="fileEnabled" className="text-base">
+                  File Logging
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Store logs in rotating log files
+                </p>
+              </div>
+              <Switch
+                id="fileEnabled"
+                checked={formData.fileEnabled}
+                onCheckedChange={(checked) =>
+                  handleInputChange('fileEnabled', checked)
+                }
+                disabled={updateMutation.isPending}
+              />
+            </div>
           </div>
         </div>
       </CardContent>
+      <CardFooter>
+        <Button
+          onClick={handleSave}
+          disabled={updateMutation.isPending}
+          className="ml-auto"
+        >
+          {updateMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Settings'
+          )}
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

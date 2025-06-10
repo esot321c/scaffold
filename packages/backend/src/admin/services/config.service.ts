@@ -11,6 +11,7 @@ import {
   UpdateLoggingConfigDto,
   UpdateLogRetentionDto,
 } from '../dto/config.dto';
+import { LogConfigUpdateDto } from '@/logging/dto/logs.dto';
 
 @Injectable()
 export class ConfigService {
@@ -121,5 +122,45 @@ export class ConfigService {
       update: { value, updatedBy },
       create: { key, value, description, updatedBy },
     });
+  }
+
+  async updateCombinedLogConfiguration(
+    dto: LogConfigUpdateDto,
+    user: User,
+  ): Promise<LogRetentionSettings> {
+    // Business rule validation - at least one logging method must be enabled
+    if (
+      dto.mongoEnabled === false &&
+      dto.fileEnabled === false &&
+      (dto.mongoEnabled !== undefined || dto.fileEnabled !== undefined)
+    ) {
+      throw new BadRequestException(
+        'At least one logging method (MongoDB or file) must be enabled',
+      );
+    }
+
+    const currentConfig = await this.getLogRetentionSettings();
+
+    // Handle retention period updates if provided
+    if (dto.securityLogDays !== undefined || dto.apiLogDays !== undefined) {
+      const retentionUpdate = {
+        securityLogDays: dto.securityLogDays ?? currentConfig.securityLogDays,
+        apiLogDays: dto.apiLogDays ?? currentConfig.apiLogDays,
+      };
+
+      await this.updateLogRetentionSettings(retentionUpdate, user);
+    }
+
+    // Handle logging method updates if provided
+    if (dto.mongoEnabled !== undefined || dto.fileEnabled !== undefined) {
+      const methodUpdate = {
+        mongoEnabled: dto.mongoEnabled ?? currentConfig.mongoEnabled,
+        fileEnabled: dto.fileEnabled ?? currentConfig.fileEnabled,
+      };
+
+      await this.updateLoggingConfiguration(methodUpdate, user);
+    }
+
+    return this.getLogRetentionSettings();
   }
 }

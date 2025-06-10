@@ -1,6 +1,7 @@
 import { Module, Global } from '@nestjs/common';
-import { AdminLogsController } from './controllers/admin-logs.controller';
+import { LogsController } from './controllers/logs.controller';
 import { LoggingService } from './services/logging.service';
+import { AdminModule } from '@/admin/admin.module';
 import { MongoDBModule } from '@/mongodb/mongodb.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -12,6 +13,7 @@ import { SecurityLogSchema } from '@/mongodb/schemas/security-log.schema';
   imports: [
     PrismaModule,
     MongoDBModule,
+    AdminModule,
     MongooseModule.forFeature([
       { name: 'ApiLog', schema: ApiLogSchema },
       { name: 'SecurityLog', schema: SecurityLogSchema },
@@ -19,6 +21,6 @@ import { SecurityLogSchema } from '@/mongodb/schemas/security-log.schema';
   ],
   providers: [LoggingService],
   exports: [LoggingService],
-  controllers: [AdminLogsController],
+  controllers: [LogsController],
 })
 export class LoggingModule {}

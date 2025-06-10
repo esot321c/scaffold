@@ -1,10 +1,16 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { PrismaService } from '@/prisma/prisma.service';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { LoggingService } from '@/logging/services/logging.service';
 import { AdminGuard } from '@/admin/guards/admin.guard';
-import { AuthEventType } from '@scaffold/types';
+import { AuthEventType, AdminStats } from '@scaffold/types';
+import { AdminStatsResponseDto } from '../dto/stats.dto';
 
 @ApiTags('Admin')
 @Controller('admin/stats')
@@ -17,8 +23,17 @@ export class StatsController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get admin dashboard statistics' })
-  async getStats() {
+  @ApiOperation({
+    summary: 'Get admin dashboard statistics',
+    description:
+      'Returns key metrics for the admin dashboard including user counts, activity, and security statistics',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistics retrieved successfully',
+    type: AdminStatsResponseDto,
+  })
+  async getStats(): Promise<AdminStats> {
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
